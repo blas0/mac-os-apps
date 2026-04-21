@@ -7,6 +7,9 @@ import AppKit
 import SwiftUI
 
 struct MenuBarView: View {
+    private static let feedbackURL = URL(string: "applefeedback://")!
+    private static let feedbackAssistantBundleID = "com.apple.appleseed.FeedbackAssistant"
+
     @Environment(\.openSettings) private var openSettings
     @Environment(KeyStore.self) private var store
 
@@ -41,6 +44,7 @@ struct MenuBarView: View {
     }
 
     private var isQuitting: Bool { quitCountdown != nil }
+    private var showsFooterCenter: Bool { isQuitting || statusMessage != nil }
 
     private let mutedRed = Color(red: 0.74, green: 0.36, blue: 0.36)
 
@@ -100,9 +104,19 @@ struct MenuBarView: View {
 
     private var submitButton: some View {
         Button(action: submit) {
-            Text("Drop key")
-                .font(AppFont.body)
-                .frame(maxWidth: .infinity)
+            VStack(spacing: 2) {
+                Text("Drop Key")
+                    .font(AppFont.body)
+
+                HStack(spacing: 3) {
+                    Image(systemName: "command").font(.system(size: 10))
+                    Image(systemName: "return").font(.system(size: 10))
+                    Text("to drop")
+                        .font(AppFont.small)
+                }
+                .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
         }
         .keyboardShortcut(.return, modifiers: .command)
         .buttonStyle(.borderedProminent)
@@ -169,34 +183,42 @@ struct MenuBarView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 3) {
-                Image(systemName: "command").font(.system(size: 10))
-                Image(systemName: "return").font(.system(size: 10))
-                Text("to drop")
-                    .font(AppFont.small)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 4)
+        VStack(spacing: 8) {
+            if showsFooterCenter {
+                HStack(spacing: 8) {
+                    Spacer(minLength: 8)
+                    footerCenter
+                }
             }
-            Spacer(minLength: 8)
-            footerCenter
-            Spacer(minLength: 8)
-            Button(action: openSettingsWindow) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 13))
-            }
-            .buttonStyle(.borderless)
-            .help("Settings")
-            .accessibilityLabel("Open settings")
 
-            Button(action: toggleQuit) {
-                Image(systemName: isQuitting ? "stop.fill" : "power")
-                    .font(.system(size: 13))
-                    .foregroundStyle(isQuitting ? mutedRed : Color.primary)
+            HStack(spacing: 10) {
+                Button(action: openFeedback) {
+                    Label("Feedback", systemImage: "exclamation.bubble")
+                        .font(AppFont.small)
+                }
+                .buttonStyle(.borderless)
+                .help("Open Feedback Assistant")
+                .accessibilityLabel("Open Feedback Assistant")
+
+                Spacer(minLength: 0)
+
+                Button(action: openSettingsWindow) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 13))
+                }
+                .buttonStyle(.borderless)
+                .help("Settings")
+                .accessibilityLabel("Open settings")
+
+                Button(action: toggleQuit) {
+                    Image(systemName: isQuitting ? "stop.fill" : "power")
+                        .font(.system(size: 13))
+                        .foregroundStyle(isQuitting ? mutedRed : Color.primary)
+                }
+                .buttonStyle(.borderless)
+                .help(isQuitting ? "Cancel quit" : "Quit keyDrop")
+                .accessibilityLabel(isQuitting ? "Cancel quit" : "Quit keyDrop")
             }
-            .buttonStyle(.borderless)
-            .help(isQuitting ? "Cancel quit" : "Quit keyDrop")
-            .accessibilityLabel(isQuitting ? "Cancel quit" : "Quit keyDrop")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -229,6 +251,16 @@ struct MenuBarView: View {
             win.makeKeyAndOrderFront(nil)
             win.orderFrontRegardless()
         }
+    }
+
+    private func openFeedback() {
+        let workspace = NSWorkspace.shared
+        if workspace.open(Self.feedbackURL) { return }
+        if let appURL = workspace.urlForApplication(withBundleIdentifier: Self.feedbackAssistantBundleID) {
+            workspace.open(appURL)
+            return
+        }
+        flash(StatusMessage(text: "Feedback Assistant unavailable.", kind: .error))
     }
 
     private func submit() {
