@@ -44,7 +44,6 @@ struct MenuBarView: View {
     }
 
     private var isQuitting: Bool { quitCountdown != nil }
-    private var showsFooterCenter: Bool { isQuitting || statusMessage != nil }
 
     private let mutedRed = Color(red: 0.74, green: 0.36, blue: 0.36)
 
@@ -85,7 +84,7 @@ struct MenuBarView: View {
             fieldBlock(title: "KEY *") {
                 SecureField("Paste your key", text: $key)
                     .textFieldStyle(.roundedBorder)
-                    .font(AppFont.body)
+                    .font(AppFont.monoBody)
                     .focused($focusedField, equals: .key)
                     .onSubmit(submit)
                     .modifier(IBeamCursor())
@@ -146,7 +145,7 @@ struct MenuBarView: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Text(entry.keyPreview)
-                    .font(AppFont.small)
+                    .font(AppFont.monoSmall)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -183,42 +182,35 @@ struct MenuBarView: View {
     }
 
     private var footer: some View {
-        VStack(spacing: 8) {
-            if showsFooterCenter {
-                HStack(spacing: 8) {
-                    Spacer(minLength: 8)
-                    footerCenter
-                }
+        HStack(spacing: 10) {
+            Button(action: openFeedback) {
+                Label("Feedback", systemImage: "exclamation.bubble")
+                    .font(AppFont.small)
             }
+            .buttonStyle(.borderless)
+            .help("Open Feedback Assistant")
+            .accessibilityLabel("Open Feedback Assistant")
 
-            HStack(spacing: 10) {
-                Button(action: openFeedback) {
-                    Label("Feedback", systemImage: "exclamation.bubble")
-                        .font(AppFont.small)
-                }
-                .buttonStyle(.borderless)
-                .help("Open Feedback Assistant")
-                .accessibilityLabel("Open Feedback Assistant")
+            Spacer(minLength: 8)
+            footerCenter
+            Spacer(minLength: 8)
 
-                Spacer(minLength: 0)
-
-                Button(action: openSettingsWindow) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 13))
-                }
-                .buttonStyle(.borderless)
-                .help("Settings")
-                .accessibilityLabel("Open settings")
-
-                Button(action: toggleQuit) {
-                    Image(systemName: isQuitting ? "stop.fill" : "power")
-                        .font(.system(size: 13))
-                        .foregroundStyle(isQuitting ? mutedRed : Color.primary)
-                }
-                .buttonStyle(.borderless)
-                .help(isQuitting ? "Cancel quit" : "Quit keyDrop")
-                .accessibilityLabel(isQuitting ? "Cancel quit" : "Quit keyDrop")
+            Button(action: openSettingsWindow) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 13))
             }
+            .buttonStyle(.borderless)
+            .help("Settings")
+            .accessibilityLabel("Open settings")
+
+            Button(action: toggleQuit) {
+                Image(systemName: isQuitting ? "stop.fill" : "power")
+                    .font(.system(size: 13))
+                    .foregroundStyle(isQuitting ? mutedRed : Color.primary)
+            }
+            .buttonStyle(.borderless)
+            .help(isQuitting ? "Cancel quit" : "Quit keyDrop")
+            .accessibilityLabel(isQuitting ? "Cancel quit" : "Quit keyDrop")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -298,10 +290,10 @@ struct MenuBarView: View {
     }
 
     private func startQuit() {
-        quitCountdown = 5
+        quitCountdown = 3
         quitTask?.cancel()
         quitTask = Task { @MainActor in
-            for next in stride(from: 4, through: 0, by: -1) {
+            for next in stride(from: 2, through: 0, by: -1) {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
                 if Task.isCancelled { return }
                 if next == 0 {

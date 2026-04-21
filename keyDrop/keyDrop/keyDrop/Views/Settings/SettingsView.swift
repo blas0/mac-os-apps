@@ -40,7 +40,7 @@ struct SettingsView: View {
     private var aboutFooter: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("ABOUT")
-                .font(AppFont.label)
+                .font(AppFont.monoLabel)
                 .foregroundStyle(.secondary)
             HStack(spacing: 24) {
                 aboutItem(title: "Version", value: appVersion)
@@ -58,10 +58,10 @@ struct SettingsView: View {
     private func aboutItem(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title.uppercased())
-                .font(AppFont.label)
+                .font(AppFont.monoLabel)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(AppFont.small)
+                .font(AppFont.monoSmall)
                 .textSelection(.enabled)
         }
     }

@@ -34,7 +34,7 @@ struct OnboardingView: View {
                 .font(.system(size: 28))
                 .foregroundStyle(.tint)
             Text("Welcome to keyDrop")
-                .font(AppFont.mono(18, weight: .semibold))
+                .font(AppFont.rounded(18, weight: .semibold))
         }
     }
 
