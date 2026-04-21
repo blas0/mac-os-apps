@@ -13,7 +13,7 @@ struct KeyDropApp: App {
     @State private var keyStore = KeyStore()
 
     var body: some Scene {
-        MenuBarExtra("keyDrop", image: "MenuBarIcon") {
+        MenuBarExtra("keyDrop", systemImage: "key.fill") {
             MenuBarView()
                 .environment(keyStore)
                 .onAppear(perform: applyTheme)

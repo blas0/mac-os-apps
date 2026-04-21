@@ -144,7 +144,7 @@ struct KeysTab: View {
 
     private func keyCell(_ entry: KeyEntry) -> some View {
         Text(displayKey(for: entry))
-            .font(AppFont.body)
+            .font(AppFont.monoBody)
             .foregroundStyle(keyColor(for: entry))
             .lineLimit(1)
             .truncationMode(.tail)
@@ -185,7 +185,7 @@ struct KeysTab: View {
                 .font(AppFont.label)
                 .foregroundStyle(.secondary)
             Text(displayKey(for: entry))
-                .font(AppFont.body)
+                .font(AppFont.monoBody)
                 .textSelection(.enabled)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -403,7 +403,7 @@ private struct EditKeySheet: View {
                     .foregroundStyle(.secondary)
                 TextField("Key", text: $draftKey)
                     .textFieldStyle(.roundedBorder)
-                    .font(AppFont.body)
+                    .font(AppFont.monoBody)
                     .lineLimit(1)
             }
 
