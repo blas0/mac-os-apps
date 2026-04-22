@@ -1,8 +1,8 @@
 {
   "fill" : {
     "linear-gradient" : [
-      "srgb:0.32617,0.52717,0.03971,1.00000",
-      "srgb:0.00000,0.00000,0.00000,1.00000"
+      "display-p3:0.29688,0.38677,0.27696,1.00000",
+      "display-p3:0.13419,0.22783,0.11345,1.00000"
     ],
     "orientation" : {
       "start" : {
@@ -19,12 +19,10 @@
     {
       "layers" : [
         {
-          "glass" : false,
-          "hidden" : false,
-          "image-name" : "$$1.svg",
-          "name" : "$$1",
+          "image-name" : "image1.png",
+          "name" : "image1",
           "position" : {
-            "scale" : 1.15,
+            "scale" : 1.24,
             "translation-in-points" : [
               0,
               0

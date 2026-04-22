@@ -46,6 +46,7 @@ struct SettingsView: View {
                 aboutItem(title: "Version", value: appVersion)
                 aboutItem(title: "Identifier", value: "com.neurix.keydrop")
                 aboutItem(title: "Storage", value: "Keychain + Secure Enclave")
+                aboutLinkItem(title: "Website", url: Self.websiteURL)
                 Spacer(minLength: 0)
             }
         }
@@ -65,6 +66,18 @@ struct SettingsView: View {
                 .textSelection(.enabled)
         }
     }
+
+    private func aboutLinkItem(title: String, url: URL) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title.uppercased())
+                .font(AppFont.monoLabel)
+                .foregroundStyle(.secondary)
+            Link(url.absoluteString, destination: url)
+                .font(AppFont.monoSmall)
+        }
+    }
+
+    private static let websiteURL = URL(string: "https://neurix.co/keydrop")!
 }
 
 #Preview {

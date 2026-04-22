@@ -14,18 +14,19 @@ enum AppFont {
         .custom("SF Mono", size: size).weight(weight)
     }
 
-    static let title = rounded(13, weight: .semibold)
-    static let body = rounded(12)
-    static let label = rounded(10, weight: .medium)
+    static let title = rounded(14, weight: .bold)
+    static let body = rounded(14)
+    static let label = rounded(10)
     static let small = rounded(10)
 
-    static let monoBody = mono(12)
+    static let monoBody = mono(10)
     static let monoSmall = mono(10)
-    static let monoLabel = mono(10, weight: .medium)
+    static let monoLabel = mono(10)
 }
 
 enum AppMetrics {
-    static let popoverWidth: CGFloat = 360
+    static let popoverWidth: CGFloat = 300
+    static let popoverCornerRadius: CGFloat = 18
     static let settingsWidth: CGFloat = 720
     static let settingsHeight: CGFloat = 720
 }
