@@ -176,7 +176,7 @@ struct MenuBarView: View {
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: 18)
                 .fill(Color.secondary.opacity(0.08))
         )
     }
