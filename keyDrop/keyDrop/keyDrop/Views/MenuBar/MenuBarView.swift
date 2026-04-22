@@ -52,16 +52,26 @@ struct MenuBarView: View {
             VStack(alignment: .leading, spacing: 14) {
                 header
                 form
-                submitButton
-                if showRecentList && !visibleRecents.isEmpty {
-                    recentList
+                VStack(alignment: .center, spacing: 4) {
+                    submitButton
+                    shortcutHint
                 }
+                .frame(maxWidth: .infinity)
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            if showRecentList && !visibleRecents.isEmpty {
+                recentList
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+            }
 
             footer
         }
         .frame(width: AppMetrics.popoverWidth)
+        .background(PopoverWindowStyler(cornerRadius: AppMetrics.popoverCornerRadius))
         .onAppear { focusedField = .label }
     }
 
@@ -74,20 +84,28 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 12) {
             fieldBlock(title: "LABEL *") {
                 TextField("e.g. OPENAI_API_KEY", text: $label)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
                     .font(AppFont.body)
                     .focused($focusedField, equals: .label)
                     .onSubmit { focusedField = .key }
                     .modifier(IBeamCursor())
+                    .modifier(RoundedFieldBackground(
+                        cornerRadius: AppMetrics.popoverCornerRadius,
+                        isFocused: focusedField == .label
+                    ))
             }
 
             fieldBlock(title: "KEY *") {
-                SecureField("Paste your key", text: $key)
-                    .textFieldStyle(.roundedBorder)
-                    .font(AppFont.monoBody)
+                SecureField("e.g. sk123-...", text: $key)
+                    .textFieldStyle(.plain)
+                    .font(AppFont.body)
                     .focused($focusedField, equals: .key)
                     .onSubmit(submit)
                     .modifier(IBeamCursor())
+                    .modifier(RoundedFieldBackground(
+                        cornerRadius: AppMetrics.popoverCornerRadius,
+                        isFocused: focusedField == .key
+                    ))
             }
         }
     }
@@ -103,25 +121,21 @@ struct MenuBarView: View {
 
     private var submitButton: some View {
         Button(action: submit) {
-            VStack(spacing: 2) {
-                Text("Drop Key")
-                    .font(AppFont.body)
-
-                HStack(spacing: 3) {
-                    Image(systemName: "command").font(.system(size: 10))
-                    Image(systemName: "return").font(.system(size: 10))
-                    Text("to drop")
-                        .font(AppFont.small)
-                }
-                .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
+            Text("Drop Key")
+                .font(AppFont.body)
         }
         .keyboardShortcut(.return, modifiers: .command)
-        .buttonStyle(.borderedProminent)
-        .tint(.accentColor)
-        .environment(\.controlActiveState, .key)
+        .buttonStyle(RoundedPrimaryButtonStyle(cornerRadius: AppMetrics.popoverCornerRadius))
         .disabled(!canSubmit)
+    }
+
+    private var shortcutHint: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "command").font(.system(size: 10))
+            Image(systemName: "return").font(.system(size: 10))
+            Text("to drop").font(AppFont.small)
+        }
+        .foregroundStyle(.secondary)
     }
 
     private var recentList: some View {
@@ -176,7 +190,7 @@ struct MenuBarView: View {
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: AppMetrics.popoverCornerRadius)
                 .fill(Color.secondary.opacity(0.08))
         )
     }
@@ -184,7 +198,7 @@ struct MenuBarView: View {
     private var footer: some View {
         HStack(spacing: 10) {
             Button(action: openFeedback) {
-                Label("Feedback", systemImage: "exclamation.bubble")
+                Label("Feedback", systemImage: "exclamationmark.bubble")
                     .font(AppFont.small)
             }
             .buttonStyle(.borderless)
@@ -320,6 +334,82 @@ private struct IBeamCursor: ViewModifier {
             } else {
                 NSCursor.arrow.set()
             }
+        }
+    }
+}
+
+private struct RoundedFieldBackground: ViewModifier {
+    let cornerRadius: CGFloat
+    let isFocused: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Color(nsColor: .textBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        isFocused ? Color.accentColor : Color.secondary.opacity(0.25),
+                        lineWidth: isFocused ? 1.5 : 1
+                    )
+            )
+    }
+}
+
+private struct RoundedPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    let cornerRadius: CGFloat
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity)
+            .foregroundStyle(.white)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(fillColor(pressed: configuration.isPressed))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+    }
+
+    private func fillColor(pressed: Bool) -> Color {
+        guard isEnabled else { return Color.accentColor.opacity(0.35) }
+        return pressed ? Color.accentColor.opacity(0.75) : Color.accentColor
+    }
+}
+
+private struct PopoverWindowStyler: NSViewRepresentable {
+    let cornerRadius: CGFloat
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async { apply(to: view) }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { apply(to: nsView) }
+    }
+
+    private func apply(to view: NSView) {
+        guard let window = view.window else { return }
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = true
+
+        guard let content = window.contentView else { return }
+        content.wantsLayer = true
+        content.layer?.cornerRadius = cornerRadius
+        content.layer?.masksToBounds = true
+        if #available(macOS 10.15, *) {
+            content.layer?.cornerCurve = .continuous
         }
     }
 }

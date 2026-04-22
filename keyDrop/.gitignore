@@ -52,8 +52,13 @@ playground.xcworkspace
 # Tools / caches
 .rev-eng-cursor-regex-mcp/
 .mcp_data/
+.mcp.json
 .claude/
 .cursor/
+
+# Design assets / staging (not part of app target)
+Icon Exports/
+/keyDrop.icon/
 
 # Editors
 .idea/
