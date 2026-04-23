@@ -162,10 +162,8 @@ final class KeyStore {
     @MainActor
     private func pinMenuBarWindow() {
         for window in NSApp.windows where isMenuBarExtraWindow(window) {
+            guard window.isVisible else { continue }
             window.hidesOnDeactivate = false
-            if !window.isVisible {
-                window.orderFrontRegardless()
-            }
         }
     }
 

@@ -1,8 +1,8 @@
 {
   "fill" : {
     "linear-gradient" : [
-      "display-p3:0.29688,0.38677,0.27696,1.00000",
-      "display-p3:0.13419,0.22783,0.11345,1.00000"
+      "srgb:0.45139,0.99310,1.00000,1.00000",
+      "srgb:0.99953,0.98836,0.47266,1.00000"
     ],
     "orientation" : {
       "start" : {
@@ -19,6 +19,8 @@
     {
       "layers" : [
         {
+          "blend-mode" : "normal",
+          "glass" : true,
           "image-name" : "image1.png",
           "name" : "image1",
           "position" : {
@@ -28,6 +30,14 @@
               0
             ]
           }
+        },
+        {
+          "blend-mode" : "lighten",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "ChatGPT Image Apr 22, 2026, 07_44_26 PM.jpg",
+          "name" : "ChatGPT Image Apr 22, 2026, 07_44_26 PM",
+          "opacity" : 1
         }
       ],
       "shadow" : {

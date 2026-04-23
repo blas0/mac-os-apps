@@ -27,8 +27,9 @@ enum AppFont {
 enum AppMetrics {
     static let popoverWidth: CGFloat = 300
     static let popoverCornerRadius: CGFloat = 18
-    static let settingsWidth: CGFloat = 720
-    static let settingsHeight: CGFloat = 720
+    static let settingsMinWidth: CGFloat = 580
+    static let settingsSidebarWidth: CGFloat = 64
+    static let settingsFormLabelWidth: CGFloat = 160
 }
 
 enum ThemeOverride: String, CaseIterable, Identifiable {
@@ -51,6 +52,14 @@ enum ThemeOverride: String, CaseIterable, Identifiable {
         case .system: nil
         case .light: .light
         case .dark: .dark
+        }
+    }
+
+    func symbolName(active: Bool) -> String {
+        switch self {
+        case .system: active ? "apple.terminal.fill" : "apple.terminal"
+        case .light: active ? "sun.max.fill" : "sun.max"
+        case .dark: active ? "moon.fill" : "moon"
         }
     }
 }
