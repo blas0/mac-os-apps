@@ -14,10 +14,11 @@ struct KeysTab: View {
     @State private var popoverTarget: HoverTarget?
     @State private var editTarget: EditTarget?
     @State private var deleteConfirmTarget: KeyEntry?
-    @State private var rowStatus: RowStatus?
-    @State private var rowStatusTask: Task<Void, Never>?
+    @State private var toast: ToastMessage?
+    @State private var toastTask: Task<Void, Never>?
 
-    private static let hoverDelayNanos: UInt64 = 2_000_000_000
+    private static let hoverDelayNanos: UInt64 = 1_100_000_000
+    private static let toastLifetime: TimeInterval = 1.5
 
     private enum Column { case label, key }
 
@@ -32,10 +33,8 @@ struct KeysTab: View {
         let currentKey: String
     }
 
-    private struct RowStatus: Equatable, Identifiable {
+    private struct ToastMessage: Equatable, Identifiable {
         let id = UUID()
-        let entryId: UUID
-        let column: Column
         let text: String
         let kind: Kind
         enum Kind { case success, error }
@@ -62,6 +61,7 @@ struct KeysTab: View {
             footer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .bottomTrailing) { toastView }
         .sheet(item: $editTarget) { target in
             EditKeySheet(entry: target.entry, initialKey: target.currentKey) { newLabel, newKey in
                 store.updateEntry(id: target.entry.id, newLabel: newLabel, newKey: newKey)
@@ -99,15 +99,19 @@ struct KeysTab: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private static let rowHeight: CGFloat = 28
+
     private var table: some View {
         Table(sortedEntries, selection: $selection) {
             TableColumn("LABEL") { entry in
                 labelCell(entry)
+                    .frame(height: Self.rowHeight)
             }
             .width(min: 200, ideal: 200, max: 200)
 
             TableColumn("KEY") { entry in
                 keyCell(entry)
+                    .frame(height: Self.rowHeight)
             }
             .width(min: 220, ideal: 220, max: 220)
 
@@ -117,10 +121,11 @@ struct KeysTab: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .frame(height: Self.rowHeight)
             }
             .width(min: 160, ideal: 160, max: 160)
         }
-        .tableStyle(.inset)
+        .tableStyle(.inset(alternatesRowBackgrounds: false))
         .font(AppFont.body)
         .contextMenu(forSelectionType: KeyEntry.ID.self) { ids in
             contextMenuItems(for: ids)
@@ -128,9 +133,9 @@ struct KeysTab: View {
     }
 
     private func labelCell(_ entry: KeyEntry) -> some View {
-        Text(displayLabel(for: entry))
+        Text(entry.label)
             .font(AppFont.body)
-            .foregroundStyle(labelColor(for: entry))
+            .foregroundStyle(Color.primary)
             .lineLimit(1)
             .truncationMode(.tail)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,7 +150,7 @@ struct KeysTab: View {
     private func keyCell(_ entry: KeyEntry) -> some View {
         Text(displayKey(for: entry))
             .font(AppFont.monoBody)
-            .foregroundStyle(keyColor(for: entry))
+            .foregroundStyle(isRevealed(entry) ? Color.primary : Color.secondary)
             .lineLimit(1)
             .truncationMode(.tail)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -155,6 +160,36 @@ struct KeysTab: View {
             .popover(isPresented: popoverBinding(for: entry, column: .key), arrowEdge: .top) {
                 hoverPopover(entry)
             }
+    }
+
+    @ViewBuilder
+    private var toastView: some View {
+        if let toast {
+            HStack(spacing: 8) {
+                Image(systemName: toast.kind == .success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(toast.kind == .success ? Color.green : Color.red)
+                Text(toast.text)
+                    .font(AppFont.body)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(.ultraThinMaterial)
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(Color.secondary.opacity(0.25), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+            .padding(.trailing, 18)
+            .padding(.bottom, 18)
+            .id(toast.id)
+            .transition(.keysToastBlurFade)
+        }
     }
 
     @ViewBuilder
@@ -201,13 +236,6 @@ struct KeysTab: View {
                 .font(AppFont.small)
                 .foregroundStyle(.secondary)
             Spacer()
-            if let err = store.lastError {
-                Text(err)
-                    .font(AppFont.small)
-                    .foregroundStyle(.red)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -221,34 +249,10 @@ struct KeysTab: View {
     }
 
     private func displayKey(for entry: KeyEntry) -> String {
-        if let status = rowStatus, status.entryId == entry.id, status.column == .key {
-            return status.text
-        }
         if isRevealed(entry), let value = store.revealedValues[entry.id] {
             return value
         }
         return entry.keyPreview
-    }
-
-    private func displayLabel(for entry: KeyEntry) -> String {
-        if let status = rowStatus, status.entryId == entry.id, status.column == .label {
-            return status.text
-        }
-        return entry.label
-    }
-
-    private func labelColor(for entry: KeyEntry) -> Color {
-        if let status = rowStatus, status.entryId == entry.id, status.column == .label {
-            return status.kind == .success ? .green : .red
-        }
-        return .primary
-    }
-
-    private func keyColor(for entry: KeyEntry) -> Color {
-        if let status = rowStatus, status.entryId == entry.id, status.column == .key {
-            return status.kind == .success ? .green : .red
-        }
-        return isRevealed(entry) ? Color.primary : Color.secondary
     }
 
     // MARK: - Hover
@@ -296,15 +300,15 @@ struct KeysTab: View {
         hoverTask?.cancel()
         let needsAuth = !store.auth.isWithinGrace
         if needsAuth {
-            showRowStatus(RowStatus(entryId: entry.id, column: column, text: "Please authenticate.", kind: .error), persistent: true)
+            showToast(ToastMessage(text: "Please authenticate.", kind: .error), persistent: true)
         }
         store.copyKey(entry) { success in
             if success {
-                showRowStatus(RowStatus(entryId: entry.id, column: column, text: "Copied!", kind: .success))
+                showToast(ToastMessage(text: "Copied!", kind: .success))
             } else if let err = store.lastError {
-                showRowStatus(RowStatus(entryId: entry.id, column: column, text: err, kind: .error))
+                showToast(ToastMessage(text: err, kind: .error))
             } else {
-                clearRowStatus()
+                clearToast()
             }
         }
     }
@@ -314,50 +318,86 @@ struct KeysTab: View {
         hoverTask?.cancel()
         let needsAuth = !store.auth.isWithinGrace
         if needsAuth {
-            showRowStatus(RowStatus(entryId: entry.id, column: .label, text: "Please authenticate.", kind: .error), persistent: true)
+            showToast(ToastMessage(text: "Please authenticate.", kind: .error), persistent: true)
         }
         store.revealKey(entry) { value in
             if let value {
-                clearRowStatus()
+                clearToast()
                 editTarget = EditTarget(id: entry.id, entry: entry, currentKey: value)
             } else if let err = store.lastError {
-                showRowStatus(RowStatus(entryId: entry.id, column: .label, text: err, kind: .error))
+                showToast(ToastMessage(text: err, kind: .error))
             } else {
-                clearRowStatus()
+                clearToast()
             }
         }
     }
 
     private func performDelete(_ entry: KeyEntry) {
-        showRowStatus(RowStatus(entryId: entry.id, column: .label, text: "Please authenticate.", kind: .error), persistent: true)
+        showToast(ToastMessage(text: "Please authenticate.", kind: .error), persistent: true)
         store.deleteWithAuth(entry) { success in
             if success {
-                clearRowStatus()
+                clearToast()
             } else if let err = store.lastError {
-                showRowStatus(RowStatus(entryId: entry.id, column: .label, text: err, kind: .error))
+                showToast(ToastMessage(text: err, kind: .error))
             } else {
-                clearRowStatus()
+                clearToast()
             }
         }
     }
 
-    private func showRowStatus(_ status: RowStatus, persistent: Bool = false) {
-        rowStatus = status
-        rowStatusTask?.cancel()
-        rowStatusTask = nil
-        guard !persistent else { return }
-        let lifetime: TimeInterval = status.kind == .error ? 5 : 2.0
-        rowStatusTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(lifetime * 1_000_000_000))
-            guard !Task.isCancelled else { return }
-            if rowStatus == status { rowStatus = nil }
+    private func showToast(_ message: ToastMessage, persistent: Bool = false) {
+        toastTask?.cancel()
+        toastTask = nil
+
+        if toast != nil {
+            withAnimation(.easeIn(duration: 0.22)) { toast = nil }
+            toastTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 240_000_000)
+                guard !Task.isCancelled else { return }
+                presentToast(message, persistent: persistent)
+            }
+        } else {
+            presentToast(message, persistent: persistent)
         }
     }
 
-    private func clearRowStatus() {
-        rowStatusTask?.cancel()
-        rowStatusTask = nil
-        rowStatus = nil
+    private func presentToast(_ message: ToastMessage, persistent: Bool) {
+        withAnimation(.easeOut(duration: 0.22)) {
+            toast = message
+        }
+        guard !persistent else { return }
+        toastTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(Self.toastLifetime * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            if toast == message {
+                withAnimation(.easeIn(duration: 0.22)) { toast = nil }
+            }
+        }
+    }
+
+    private func clearToast() {
+        toastTask?.cancel()
+        toastTask = nil
+        withAnimation(.easeIn(duration: 0.22)) { toast = nil }
+    }
+}
+
+private extension AnyTransition {
+    static var keysToastBlurFade: AnyTransition {
+        .modifier(
+            active: KeysToastBlurFadeModifier(opacity: 0, blur: 10),
+            identity: KeysToastBlurFadeModifier(opacity: 1, blur: 0)
+        )
+    }
+}
+
+private struct KeysToastBlurFadeModifier: ViewModifier {
+    let opacity: Double
+    let blur: CGFloat
+    func body(content: Content) -> some View {
+        content
+            .opacity(opacity)
+            .blur(radius: blur)
     }
 }
 

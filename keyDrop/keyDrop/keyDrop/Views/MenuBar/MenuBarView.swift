@@ -14,14 +14,24 @@ struct MenuBarView: View {
     @Environment(KeyStore.self) private var store
 
     @AppStorage("showRecentList") private var showRecentList: Bool = true
-    @AppStorage("recentListCount") private var recentListCount: Int = 3
+
+    private static let maxVisibleRecents = 5
+    private static let recentRowHeight: CGFloat = 44
+    private static let recentRowSpacing: CGFloat = 4
+    private static let pasteMinDelta = 2
+    private static let toastLifetime: TimeInterval = 1.5
+
+    private static func didPaste(old: String, new: String) -> Bool {
+        guard new.count >= old.count + pasteMinDelta else { return false }
+        guard let clip = NSPasteboard.general.string(forType: .string), !clip.isEmpty else { return false }
+        let delta = new.count - old.count
+        return delta == clip.count && new.contains(clip)
+    }
 
     @State private var label: String = ""
     @State private var key: String = ""
     @State private var statusMessage: StatusMessage?
     @State private var statusDismissTask: Task<Void, Never>?
-    @State private var quitCountdown: Int?
-    @State private var quitTask: Task<Void, Never>?
     @FocusState private var focusedField: Field?
 
     enum Field: Hashable { case label, key }
@@ -38,14 +48,14 @@ struct MenuBarView: View {
         !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var visibleRecents: [KeyEntry] {
-        let count = max(1, min(5, recentListCount))
-        return Array(store.entries.prefix(count))
+    private var sortedRecents: [KeyEntry] {
+        store.entries.sorted { $0.createdAt > $1.createdAt }
     }
 
-    private var isQuitting: Bool { quitCountdown != nil }
-
-    private let mutedRed = Color(red: 0.74, green: 0.36, blue: 0.36)
+    private var recentScrollHeight: CGFloat {
+        let rows = CGFloat(Self.maxVisibleRecents)
+        return rows * Self.recentRowHeight + (rows - 1) * Self.recentRowSpacing
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -62,7 +72,7 @@ struct MenuBarView: View {
             .padding(.top, 16)
             .padding(.bottom, 12)
 
-            if showRecentList && !visibleRecents.isEmpty {
+            if showRecentList && !sortedRecents.isEmpty {
                 recentList
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
@@ -72,7 +82,52 @@ struct MenuBarView: View {
         }
         .frame(width: AppMetrics.popoverWidth)
         .background(PopoverWindowStyler(cornerRadius: AppMetrics.popoverCornerRadius))
+        .overlay(alignment: .bottom) { toastView }
         .onAppear { focusedField = .label }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            Self.dismissPopover()
+        }
+    }
+
+    private static func dismissPopover() {
+        let tolerance: CGFloat = 4
+        for window in NSApp.windows where window.isVisible {
+            let width = window.frame.width
+            guard abs(width - AppMetrics.popoverWidth) <= tolerance else { continue }
+            window.orderOut(nil)
+        }
+    }
+
+    private var toastView: some View {
+        Group {
+            if let status = statusMessage {
+                HStack(spacing: 8) {
+                    Image(systemName: status.kind == .success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(status.kind == .success ? Color.green : Color.red)
+                    Text(status.text)
+                        .font(AppFont.body)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(.ultraThinMaterial)
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.secondary.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+                .padding(.bottom, 56)
+                .id(status.id)
+                .transition(.menuBarToastBlurFade)
+                .allowsHitTesting(false)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: statusMessage)
     }
 
     private var header: some View {
@@ -88,6 +143,9 @@ struct MenuBarView: View {
                     .font(AppFont.body)
                     .focused($focusedField, equals: .label)
                     .onSubmit { focusedField = .key }
+                    .onChange(of: label) { old, new in
+                        if Self.didPaste(old: old, new: new) { focusedField = .key }
+                    }
                     .modifier(IBeamCursor())
                     .modifier(RoundedFieldBackground(
                         cornerRadius: AppMetrics.popoverCornerRadius,
@@ -101,6 +159,9 @@ struct MenuBarView: View {
                     .font(AppFont.body)
                     .focused($focusedField, equals: .key)
                     .onSubmit(submit)
+                    .onChange(of: key) { old, new in
+                        if Self.didPaste(old: old, new: new) { focusedField = .label }
+                    }
                     .modifier(IBeamCursor())
                     .modifier(RoundedFieldBackground(
                         cornerRadius: AppMetrics.popoverCornerRadius,
@@ -143,10 +204,21 @@ struct MenuBarView: View {
             Text("RECENT")
                 .font(AppFont.label)
                 .foregroundStyle(.secondary)
-            VStack(spacing: 4) {
-                ForEach(visibleRecents) { entry in
-                    recentRow(entry)
+            if sortedRecents.count <= Self.maxVisibleRecents {
+                VStack(spacing: Self.recentRowSpacing) {
+                    ForEach(sortedRecents) { entry in
+                        recentRow(entry)
+                    }
                 }
+            } else {
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: Self.recentRowSpacing) {
+                        ForEach(sortedRecents) { entry in
+                            recentRow(entry)
+                        }
+                    }
+                }
+                .frame(height: recentScrollHeight)
             }
         }
     }
@@ -189,6 +261,7 @@ struct MenuBarView: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
+        .frame(height: Self.recentRowHeight)
         .background(
             RoundedRectangle(cornerRadius: AppMetrics.popoverCornerRadius)
                 .fill(Color.secondary.opacity(0.08))
@@ -200,60 +273,47 @@ struct MenuBarView: View {
             Button(action: openFeedback) {
                 Label("Feedback", systemImage: "exclamationmark.bubble")
                     .font(AppFont.small)
+                    .foregroundStyle(.primary)
             }
             .buttonStyle(.borderless)
             .help("Open Feedback Assistant")
             .accessibilityLabel("Open Feedback Assistant")
 
             Spacer(minLength: 8)
-            footerCenter
-            Spacer(minLength: 8)
 
             Button(action: openSettingsWindow) {
-                Image(systemName: "gearshape")
+                Image(systemName: "app.background.dotted")
                     .font(.system(size: 13))
+                    .foregroundStyle(.primary)
             }
             .buttonStyle(.borderless)
             .help("Settings")
             .accessibilityLabel("Open settings")
 
-            Button(action: toggleQuit) {
-                Image(systemName: isQuitting ? "stop.fill" : "power")
+            Button {
+                NSApp.terminate(nil)
+            } label: {
+                Image(systemName: "power.circle.fill")
                     .font(.system(size: 13))
-                    .foregroundStyle(isQuitting ? mutedRed : Color.primary)
+                    .foregroundStyle(.primary)
             }
             .buttonStyle(.borderless)
-            .help(isQuitting ? "Cancel quit" : "Quit keyDrop")
-            .accessibilityLabel(isQuitting ? "Cancel quit" : "Quit keyDrop")
+            .help("Quit keyDrop")
+            .accessibilityLabel("Quit keyDrop")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .overlay(alignment: .top) { Divider() }
     }
 
-    @ViewBuilder
-    private var footerCenter: some View {
-        if isQuitting {
-            Text("\(quitCountdown ?? 0)s till quit")
-                .font(AppFont.small)
-                .foregroundStyle(mutedRed)
-                .monospacedDigit()
-        } else if let status = statusMessage {
-            Text(status.text)
-                .font(AppFont.small)
-                .foregroundStyle(status.kind == .success ? Color.green : Color.red)
-                .lineLimit(1)
-                .truncationMode(.tail)
-        }
-    }
-
     private func openSettingsWindow() {
+        Self.dismissPopover()
         NSApp.setActivationPolicy(.regular)
         openSettings()
         NSApp.activate(ignoringOtherApps: true)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            guard let win = NSApp.windows.first(where: { $0.canBecomeKey && $0.contentViewController != nil && $0.frame.width >= AppMetrics.settingsWidth - 1 }) else { return }
+            guard let win = NSApp.windows.first(where: { $0.canBecomeKey && $0.contentViewController != nil && $0.frame.width >= AppMetrics.settingsMinWidth - 1 }) else { return }
             win.makeKeyAndOrderFront(nil)
             win.orderFrontRegardless()
         }
@@ -283,46 +343,49 @@ struct MenuBarView: View {
     }
 
     private func flash(_ message: StatusMessage, persistent: Bool = false) {
-        statusMessage = message
         statusDismissTask?.cancel()
         statusDismissTask = nil
+
+        if statusMessage != nil {
+            statusMessage = nil
+            statusDismissTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 240_000_000)
+                guard !Task.isCancelled else { return }
+                presentToast(message, persistent: persistent)
+            }
+        } else {
+            presentToast(message, persistent: persistent)
+        }
+    }
+
+    private func presentToast(_ message: StatusMessage, persistent: Bool) {
+        statusMessage = message
         guard !persistent else { return }
-        let lifetime: TimeInterval = message.kind == .error ? 5 : 2.5
         statusDismissTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(lifetime * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(Self.toastLifetime * 1_000_000_000))
             guard !Task.isCancelled else { return }
             if statusMessage == message { statusMessage = nil }
         }
     }
 
-    private func toggleQuit() {
-        if isQuitting {
-            cancelQuit()
-        } else {
-            startQuit()
-        }
-    }
+}
 
-    private func startQuit() {
-        quitCountdown = 3
-        quitTask?.cancel()
-        quitTask = Task { @MainActor in
-            for next in stride(from: 2, through: 0, by: -1) {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                if Task.isCancelled { return }
-                if next == 0 {
-                    NSApp.terminate(nil)
-                    return
-                }
-                quitCountdown = next
-            }
-        }
+private extension AnyTransition {
+    static var menuBarToastBlurFade: AnyTransition {
+        .modifier(
+            active: MenuBarToastBlurFadeModifier(opacity: 0, blur: 10),
+            identity: MenuBarToastBlurFadeModifier(opacity: 1, blur: 0)
+        )
     }
+}
 
-    private func cancelQuit() {
-        quitTask?.cancel()
-        quitTask = nil
-        quitCountdown = nil
+private struct MenuBarToastBlurFadeModifier: ViewModifier {
+    let opacity: Double
+    let blur: CGFloat
+    func body(content: Content) -> some View {
+        content
+            .opacity(opacity)
+            .blur(radius: blur)
     }
 }
 
@@ -388,17 +451,28 @@ private struct RoundedPrimaryButtonStyle: ButtonStyle {
 private struct PopoverWindowStyler: NSViewRepresentable {
     let cornerRadius: CGFloat
 
+    final class Coordinator {
+        var applied = false
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
-        DispatchQueue.main.async { apply(to: view) }
+        DispatchQueue.main.async { [cornerRadius] in
+            apply(to: view, coordinator: context.coordinator, cornerRadius: cornerRadius)
+        }
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { apply(to: nsView) }
+        guard !context.coordinator.applied else { return }
+        DispatchQueue.main.async { [cornerRadius] in
+            apply(to: nsView, coordinator: context.coordinator, cornerRadius: cornerRadius)
+        }
     }
 
-    private func apply(to view: NSView) {
+    private func apply(to view: NSView, coordinator: Coordinator, cornerRadius: CGFloat) {
         guard let window = view.window else { return }
         window.backgroundColor = .clear
         window.isOpaque = false
@@ -411,6 +485,7 @@ private struct PopoverWindowStyler: NSViewRepresentable {
         if #available(macOS 10.15, *) {
             content.layer?.cornerCurve = .continuous
         }
+        coordinator.applied = true
     }
 }
 
