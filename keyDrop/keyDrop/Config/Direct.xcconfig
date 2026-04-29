@@ -19,3 +19,6 @@ ENABLE_HARDENED_RUNTIME = YES
 
 // Sparkle requires these linker flags for its XPC bundles to co-sign correctly during archive.
 OTHER_CODE_SIGN_FLAGS = $(inherited) --timestamp --options=runtime
+
+// Merge Sparkle configuration (SUFeedURL, SUPublicEDKey) into generated Info.plist.
+INFOPLIST_FILE = Config/Info-Direct.plist

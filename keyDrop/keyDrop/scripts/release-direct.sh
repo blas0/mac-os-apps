@@ -63,6 +63,66 @@ VERSION=$(grep "MARKETING_VERSION" "$PROJECT_ROOT/Config/Version.xcconfig" | cut
 BUILD=$(grep "CURRENT_PROJECT_VERSION" "$PROJECT_ROOT/Config/Version.xcconfig" | cut -d= -f2 | tr -d ' ')
 echo "[*] Version: $VERSION ($BUILD)"
 
+# ============================================================
+# Git Pre-Flight Validation
+# ============================================================
+echo ""
+echo "[0] Git pre-flight checks..."
+
+# [0.1] Check for clean working tree
+if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain)" ]]; then
+    echo "[!] ERROR: Working tree has uncommitted changes."
+    echo ""
+    echo "    Uncommitted files:"
+    git -C "$PROJECT_ROOT" status --short
+    echo ""
+    echo "    Commit or stash changes before releasing."
+    exit 1
+fi
+echo "    [+] Working tree is clean"
+
+# [0.2] Check current branch
+CURRENT_BRANCH=$(git -C "$PROJECT_ROOT" branch --show-current)
+echo "    [*] Current branch: $CURRENT_BRANCH"
+
+if [[ "$CURRENT_BRANCH" != "main" ]]; then
+    echo "    [!] Warning: Releasing from branch '$CURRENT_BRANCH' (not main)"
+    read -p "    Continue? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "    Aborted."
+        exit 1
+    fi
+fi
+
+# [0.3] Check if local is up-to-date with remote
+git -C "$PROJECT_ROOT" fetch --quiet origin "$CURRENT_BRANCH" 2>/dev/null || true
+LOCAL_COMMIT=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
+REMOTE_COMMIT=$(git -C "$PROJECT_ROOT" rev-parse "origin/$CURRENT_BRANCH" 2>/dev/null || echo "")
+
+if [[ -n "$REMOTE_COMMIT" && "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]]; then
+    BEHIND=$(git -C "$PROJECT_ROOT" rev-list --count HEAD..origin/"$CURRENT_BRANCH" 2>/dev/null || echo "0")
+    AHEAD=$(git -C "$PROJECT_ROOT" rev-list --count origin/"$CURRENT_BRANCH"..HEAD 2>/dev/null || echo "0")
+    if [[ "$BEHIND" -gt 0 ]]; then
+        echo "    [!] Warning: Local is $BEHIND commit(s) behind origin/$CURRENT_BRANCH"
+        echo "    Run: git pull origin $CURRENT_BRANCH"
+        read -p "    Continue anyway? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "    Aborted."
+            exit 1
+        fi
+    fi
+    if [[ "$AHEAD" -gt 0 ]]; then
+        echo "    [*] Local is $AHEAD commit(s) ahead of origin/$CURRENT_BRANCH"
+    fi
+else
+    echo "    [+] Local is up-to-date with remote"
+fi
+
+echo "[+] Git pre-flight checks passed"
+echo ""
+
 # Clean build directory
 echo "[1] Cleaning build directory..."
 rm -rf "$BUILD_DIR"
