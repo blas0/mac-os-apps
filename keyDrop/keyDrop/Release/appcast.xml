@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>keyDrop Updates</title>
+        <link>https://neurix.co/keydrop/appcast.xml</link>
+        <description>Secure API key management for macOS</description>
+        <language>en</language>
+        <item>
+            <title>Version 1.0.1</title>
+            <pubDate>Wed, 29 Apr 2026 10:50:17 -0700</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <enclosure url="https://pub-6917a81ec60742c685a6b5517bf87869.r2.dev/releases/keyDrop-1.0.1.zip"
+                       sparkle:edSignature="b+w+oLRqZG+dMDttjmAaVA6mXEGKGYkZ7izhL0pa1qyLat0Kk2q8P4gKxGmtBeHpVKGQ5KU1gHC/QUJOFBz8CA=="
+                       length="3804417"
+                       type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        <item>
+            <title>Version 1.0.0</title>
+            <pubDate>Wed, 29 Apr 2026 10:48:25 -0700</pubDate>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <enclosure url="https://pub-6917a81ec60742c685a6b5517bf87869.r2.dev/releases/keyDrop-1.0.0.zip"
+                       sparkle:edSignature="oiYQHnHo/FRn1TK/mQZMUjrB24ZeXOL16uLwGWcqBrkr7uwdSoshKh1+n1IlImLFWYaoqTraelndz5eLep/eBw=="
+                       length="3804432"
+                       type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+
+        <!--
+        Add new releases at the top. Sparkle will find the latest compatible version.
+
+        Generate entries using: ./scripts/release-direct.sh
+        The script outputs the <item> block with correct signature and length.
+        -->
+
+        <!-- TEMPLATE - Replace with actual release
+        <item>
+            <title>Version 1.0.0</title>
+            <pubDate>Sat, 26 Apr 2026 12:00:00 -0700</pubDate>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>Initial Release</h2>
+                <ul>
+                    <li>Secure key storage with Keychain + Secure Enclave</li>
+                    <li>Menu bar quick access</li>
+                    <li>Biometric authentication</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://neurix.co/keydrop/releases/keyDrop-1.0.0.zip"
+                       sparkle:edSignature="SIGNATURE_HERE"
+                       length="0"
+                       type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        -->
+
+    </channel>
+</rss>
