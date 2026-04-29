@@ -345,11 +345,19 @@ if [[ "$SKIP_UPLOAD" == "false" && -n "$R2_ACCESS_KEY_ID" ]]; then
         --endpoint-url "$R2_ENDPOINT" \
         --content-type "application/zip"
 
-    # Upload DMG (manual downloads)
+    # Upload DMG (manual downloads / Gumroad versioned URL)
     echo "    Uploading $DMG_NAME..."
     aws s3 cp "$DMG_PATH" "s3://$R2_BUCKET/releases/$DMG_NAME" \
         --endpoint-url "$R2_ENDPOINT" \
         --content-type "application/x-apple-diskimage"
+
+    # Upload DMG as keyDrop-latest.dmg (stable URL for Gumroad - never needs to change).
+    # Short cache so new buyers always get the freshest installer.
+    echo "    Uploading keyDrop-latest.dmg (Gumroad stable pointer)..."
+    aws s3 cp "$DMG_PATH" "s3://$R2_BUCKET/releases/keyDrop-latest.dmg" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --content-type "application/x-apple-diskimage" \
+        --cache-control "max-age=300"
 
     # Upload appcast.xml
     echo "    Uploading appcast.xml..."
@@ -361,9 +369,10 @@ if [[ "$SKIP_UPLOAD" == "false" && -n "$R2_ACCESS_KEY_ID" ]]; then
     echo "[+] All files uploaded to R2"
     echo ""
     echo "[*] Published URLs:"
-    echo "    Appcast:  $R2_BASE_URL/appcast.xml"
-    echo "    ZIP:      $R2_BASE_URL/releases/$ZIP_NAME"
-    echo "    DMG:      $R2_BASE_URL/releases/$DMG_NAME"
+    echo "    Appcast:      $R2_BASE_URL/appcast.xml"
+    echo "    ZIP:          $R2_BASE_URL/releases/$ZIP_NAME"
+    echo "    DMG (versioned): $R2_BASE_URL/releases/$DMG_NAME"
+    echo "    DMG (latest):    $R2_BASE_URL/releases/keyDrop-latest.dmg  <- Gumroad uses this"
 else
     echo "[9] Skipping upload (--skip-upload or missing credentials)"
     echo ""
@@ -376,6 +385,7 @@ else
     echo "  1. Upload $ZIP_NAME to $R2_BASE_URL/releases/"
     echo "  2. Upload appcast.xml to $R2_BASE_URL/appcast.xml"
     echo "  3. Upload $DMG_NAME to $R2_BASE_URL/releases/"
+    echo "  4. Upload $DMG_NAME to $R2_BASE_URL/releases/keyDrop-latest.dmg (Gumroad stable URL)"
 fi
 
 echo ""
