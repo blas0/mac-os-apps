@@ -130,28 +130,31 @@ mkdir -p "$BUILD_DIR" "$RELEASE_DIR"
 
 # Archive
 echo "[2] Archiving for Direct distribution..."
-xcodebuild archive \
-    -project "$PROJECT_ROOT/keyDrop.xcodeproj" \
-    -scheme keyDrop \
-    -configuration Release \
-    -archivePath "$ARCHIVE_PATH" \
-    -xcconfig "$PROJECT_ROOT/Config/Direct.xcconfig" \
-    KEYDROP_DISTRIBUTION_CHANNEL=DIRECT \
-    CODE_SIGN_STYLE=Manual \
-    "CODE_SIGN_IDENTITY=Developer ID Application" \
-    "PROVISIONING_PROFILE_SPECIFIER=" \
-    -allowProvisioningUpdates \
-    | xcbeautify || xcodebuild archive \
-    -project "$PROJECT_ROOT/keyDrop.xcodeproj" \
-    -scheme keyDrop \
-    -configuration Release \
-    -archivePath "$ARCHIVE_PATH" \
-    -xcconfig "$PROJECT_ROOT/Config/Direct.xcconfig" \
-    KEYDROP_DISTRIBUTION_CHANNEL=DIRECT \
-    CODE_SIGN_STYLE=Manual \
-    "CODE_SIGN_IDENTITY=Developer ID Application" \
-    "PROVISIONING_PROFILE_SPECIFIER=" \
-    -allowProvisioningUpdates
+
+# Stream xcodebuild output through xcbeautify when available; otherwise raw.
+# Using a function avoids duplicating the xcodebuild invocation and the bug
+# where `cmd | xcbeautify || cmd` fell back silently when xcbeautify was missing.
+run_archive() {
+    xcodebuild archive \
+        -project "$PROJECT_ROOT/keyDrop.xcodeproj" \
+        -scheme keyDrop-Direct \
+        -configuration Release \
+        -archivePath "$ARCHIVE_PATH" \
+        -xcconfig "$PROJECT_ROOT/Config/Direct.xcconfig" \
+        KEYDROP_DISTRIBUTION_CHANNEL=DIRECT \
+        CODE_SIGN_STYLE=Manual \
+        "CODE_SIGN_IDENTITY=Developer ID Application" \
+        "PROVISIONING_PROFILE_SPECIFIER=" \
+        -allowProvisioningUpdates
+}
+
+if command -v xcbeautify >/dev/null 2>&1; then
+    set -o pipefail
+    run_archive | xcbeautify
+    set +o pipefail
+else
+    run_archive
+fi
 
 # Export
 echo "[3] Exporting signed app..."
