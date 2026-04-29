@@ -31,7 +31,7 @@
 
 /* Begin PBXFileReference section */
 		0BBC7EA22F9AF8E000E3BAEA /* Direct.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Direct.xcconfig; path = Config/Direct.xcconfig; sourceTree = "<group>"; };
-		0BBC7EA32F9AF8E100E3BAEA /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		0BBC7EA32F9AF8E100E3BAEA /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Version.xcconfig; path = Config/Version.xcconfig; sourceTree = "<group>"; };
 		0BBC7EA52F9AF8ED00E3BAEA /* keyDrop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = keyDrop.entitlements; sourceTree = "<group>"; };
 		0BBC7EA62F9AF8F700E3BAEA /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		0BF697F12F955644001A018C /* keyDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = keyDrop.app; sourceTree = BUILT_PRODUCTS_DIR; };
