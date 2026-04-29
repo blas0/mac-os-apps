@@ -58,18 +58,7 @@ struct MenuBarView: View {
     }
 
     var body: some View {
-        Group {
-            #if KEYDROP_CHANNEL_DIRECT
-            if !licenseService.isLicensed {
-                LicenseView(onActivated: {})
-                    .background(PopoverWindowStyler(cornerRadius: AppMetrics.popoverCornerRadius))
-            } else {
-                mainContent
-            }
-            #else
-            mainContent
-            #endif
-        }
+        mainContent
     }
 
     private var mainContent: some View {

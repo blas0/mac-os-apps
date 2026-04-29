@@ -10,12 +10,25 @@ import SwiftUI
 struct KeyDropApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage("themeOverride") private var themeOverrideRaw: String = ThemeOverride.system.rawValue
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var keyStore = KeyStore()
     @State private var updateService = UpdateService()
     @State private var licenseService = LicenseService()
 
     var body: some Scene {
-        MenuBarExtra("keyDrop", systemImage: "key.fill") {
+        // Onboarding window - presented on first launch, suppressed after completion
+        Window("Welcome to keyDrop", id: "onboarding") {
+            OnboardingView {
+                hasCompletedOnboarding = true
+            }
+            .environment(licenseService)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+        .defaultLaunchBehavior(hasCompletedOnboarding ? .suppressed : .presented)
+
+        // Menu bar - inserted only after onboarding completes
+        MenuBarExtra("keyDrop", systemImage: "key.fill", isInserted: $hasCompletedOnboarding) {
             MenuBarView()
                 .environment(keyStore)
                 .environment(updateService)

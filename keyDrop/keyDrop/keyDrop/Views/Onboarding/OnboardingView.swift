@@ -9,11 +9,24 @@ import SwiftUI
 struct OnboardingView: View {
     let onFinish: () -> Void
 
+    @Environment(\.dismissWindow) private var dismissWindow
     @State private var biometryAvailable: Bool = false
     @State private var biometryProbed: Bool = false
     @State private var biometryError: String?
+    @State private var showLicenseStep: Bool = false
 
     var body: some View {
+        Group {
+            if showLicenseStep {
+                LicenseView(onActivated: completeOnboarding)
+            } else {
+                featureContent
+            }
+        }
+        .onAppear(perform: probeBiometry)
+    }
+
+    private var featureContent: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
             Divider()
@@ -25,16 +38,17 @@ struct OnboardingView: View {
         }
         .padding(24)
         .frame(width: 460, height: 460)
-        .onAppear(perform: probeBiometry)
     }
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(systemName: "key.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(.tint)
-            Text("Welcome to keyDrop")
-                .font(AppFont.rounded(18, weight: .semibold))
+            Image("OnboardingIcon")
+                .resizable()
+                .frame(width: 32, height: 32)
+            Text("keyDrop")
+                .font(AppFont.rounded(22, weight: .bold))
+            Text("where you dump and pickup your keys.")
+                .font(AppFont.rounded(14, weight: .semibold))
         }
     }
 
@@ -52,7 +66,7 @@ struct OnboardingView: View {
     private func featureRow(symbol: String, title: String, detail: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: symbol)
-                .font(.system(size: 16))
+                .font(.system(size: 20))
                 .foregroundStyle(.tint)
                 .frame(width: 22, alignment: .center)
             VStack(alignment: .leading, spacing: 2) {
@@ -107,12 +121,25 @@ struct OnboardingView: View {
     private var footer: some View {
         HStack {
             Spacer()
-            Button("Get started", action: onFinish)
+            Button("Get started", action: proceedFromFeatures)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
             Spacer()
         }
+    }
+
+    private func proceedFromFeatures() {
+        #if KEYDROP_CHANNEL_DIRECT
+        showLicenseStep = true
+        #else
+        completeOnboarding()
+        #endif
+    }
+
+    private func completeOnboarding() {
+        onFinish()
+        dismissWindow(id: "onboarding")
     }
 
     private func probeBiometry() {
