@@ -6,6 +6,17 @@
         <description>Secure API key management for macOS</description>
         <language>en</language>
         <item>
+            <title>Version 1.1.0</title>
+            <pubDate>Wed, 29 Apr 2026 16:39:05 -0700</pubDate>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+            <enclosure url="https://pub-6917a81ec60742c685a6b5517bf87869.r2.dev/releases/keyDrop-1.1.0.zip"
+                       sparkle:edSignature="sP/0uZmK5SM391zG5jT75FL/0A91flhYI22dDkXm1Nzq/FqHZEb74wFqlQV2fuz1zZ+5vb5s3+tDiXmjffIzCQ=="
+                       length="4959549"
+                       type="application/octet-stream"/>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        <item>
             <title>Version 1.0.1</title>
             <pubDate>Wed, 29 Apr 2026 10:50:17 -0700</pubDate>
             <sparkle:version>2</sparkle:version>
