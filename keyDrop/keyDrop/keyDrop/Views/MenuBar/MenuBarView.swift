@@ -12,6 +12,7 @@ struct MenuBarView: View {
 
     @Environment(\.openSettings) private var openSettings
     @Environment(KeyStore.self) private var store
+    @Environment(LicenseService.self) private var licenseService
 
     @AppStorage("showRecentList") private var showRecentList: Bool = true
 
@@ -48,9 +49,8 @@ struct MenuBarView: View {
         !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var sortedRecents: [KeyEntry] {
-        store.entries.sorted { $0.createdAt > $1.createdAt }
-    }
+    /// Entries are pre-sorted by createdAt descending in KeyStore.
+    private var sortedRecents: [KeyEntry] { store.entries }
 
     private var recentScrollHeight: CGFloat {
         let rows = CGFloat(Self.maxVisibleRecents)
@@ -58,6 +58,21 @@ struct MenuBarView: View {
     }
 
     var body: some View {
+        Group {
+            #if KEYDROP_CHANNEL_DIRECT
+            if !licenseService.isLicensed {
+                LicenseView(onActivated: {})
+                    .background(PopoverWindowStyler(cornerRadius: AppMetrics.popoverCornerRadius))
+            } else {
+                mainContent
+            }
+            #else
+            mainContent
+            #endif
+        }
+    }
+
+    private var mainContent: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
                 header
@@ -144,7 +159,10 @@ struct MenuBarView: View {
                     .focused($focusedField, equals: .label)
                     .onSubmit { focusedField = .key }
                     .onChange(of: label) { old, new in
-                        if Self.didPaste(old: old, new: new) { focusedField = .key }
+                        if Self.didPaste(old: old, new: new) {
+                            let keyFilled = !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            focusedField = keyFilled ? nil : .key
+                        }
                     }
                     .modifier(IBeamCursor())
                     .modifier(RoundedFieldBackground(
@@ -160,7 +178,10 @@ struct MenuBarView: View {
                     .focused($focusedField, equals: .key)
                     .onSubmit(submit)
                     .onChange(of: key) { old, new in
-                        if Self.didPaste(old: old, new: new) { focusedField = .label }
+                        if Self.didPaste(old: old, new: new) {
+                            let labelFilled = !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            focusedField = labelFilled ? nil : .label
+                        }
                     }
                     .modifier(IBeamCursor())
                     .modifier(RoundedFieldBackground(
@@ -492,4 +513,5 @@ private struct PopoverWindowStyler: NSViewRepresentable {
 #Preview {
     MenuBarView()
         .environment(KeyStore())
+        .environment(LicenseService())
 }

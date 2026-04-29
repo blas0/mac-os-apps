@@ -1,0 +1,18 @@
+// MAS.xcconfig
+// Mac App Store distribution configuration.
+// Use in Xcode: duplicate Debug/Release configurations as "Debug-MAS" / "Release-MAS"
+// and set their Based on Configuration File to this xcconfig.
+
+#include "Version.xcconfig"
+
+KEYDROP_DISTRIBUTION_CHANNEL = MAS
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) KEYDROP_CHANNEL_MAS
+
+CODE_SIGN_ENTITLEMENTS = keyDrop/keyDrop.MAS.entitlements
+CODE_SIGN_STYLE = Automatic
+// MAS builds are signed with "Apple Distribution" / "3rd Party Mac Developer Application" via App Store Connect upload.
+// Do not set CODE_SIGN_IDENTITY here — let Xcode Organizer handle distribution signing.
+
+// Strict sandbox — no network client, no hardened-runtime exceptions.
+ENABLE_APP_SANDBOX = YES
+ENABLE_HARDENED_RUNTIME = YES

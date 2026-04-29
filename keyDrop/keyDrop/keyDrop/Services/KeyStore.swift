@@ -25,7 +25,7 @@ final class KeyStore {
         let dir = support.appendingPathComponent("keyDrop", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         self.metadataURL = dir.appendingPathComponent("entries.json")
-        loadFromDisk()
+        Task { await loadFromDisk() }
         auth.onInvalidate = { [weak self] in
             self?.revealedValues.removeAll()
         }
@@ -208,18 +208,16 @@ final class KeyStore {
         }
     }
 
-    private func loadFromDisk() {
-        guard let data = try? Data(contentsOf: metadataURL) else {
-            entries = []
-            return
-        }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        guard let decoded = try? decoder.decode([KeyEntry].self, from: data) else {
-            entries = []
-            return
-        }
-        entries = decoded.sorted { $0.createdAt > $1.createdAt }
+    private func loadFromDisk() async {
+        let url = metadataURL
+        let loaded: [KeyEntry] = await Task.detached(priority: .userInitiated) {
+            guard let data = try? Data(contentsOf: url) else { return [] }
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            guard let decoded = try? decoder.decode([KeyEntry].self, from: data) else { return [] }
+            return decoded.sorted { $0.createdAt > $1.createdAt }
+        }.value
+        await MainActor.run { entries = loaded }
     }
 
     private func persist() {

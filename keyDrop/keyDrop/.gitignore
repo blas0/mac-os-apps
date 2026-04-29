@@ -1,0 +1,24 @@
+# Build artifacts
+build/
+Release/
+DerivedData/
+*.xcarchive
+
+# Environment files with secrets
+scripts/.env.release
+.env
+.env.local
+*.env
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Sparkle private key (if stored locally)
+sparkle_private_key
