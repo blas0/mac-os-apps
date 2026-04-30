@@ -88,13 +88,15 @@ final class LicenseService {
 
         do {
             let info = try await verifyWithGumroad(licenseKey: trimmedKey)
-            licenseInfo = info
             try saveLicenseToKeychain(info)
+            licenseInfo = info
             return true
         } catch let error as LicenseError {
+            licenseInfo = nil
             lastError = error
             return false
         } catch {
+            licenseInfo = nil
             lastError = .networkError(error.localizedDescription)
             return false
         }
@@ -196,10 +198,16 @@ final class LicenseService {
     private func loadCachedLicense() {
         guard let jsonString = try? KeychainService.load(account: Self.keychainAccount),
               let data = jsonString.data(using: .utf8),
-              let info = try? JSONDecoder().decode(LicenseInfo.self, from: data) else {
+              let info = decodeLicenseInfo(from: data) else {
             return
         }
         licenseInfo = info
+    }
+
+    private func decodeLicenseInfo(from data: Data) -> LicenseInfo? {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(LicenseInfo.self, from: data)
     }
 
     private func saveLicenseToKeychain(_ info: LicenseInfo) throws {

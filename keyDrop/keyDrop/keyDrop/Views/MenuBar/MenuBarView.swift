@@ -12,7 +12,6 @@ struct MenuBarView: View {
 
     @Environment(\.openSettings) private var openSettings
     @Environment(KeyStore.self) private var store
-    @Environment(LicenseService.self) private var licenseService
 
     @AppStorage("showRecentList") private var showRecentList: Bool = true
 
@@ -58,10 +57,6 @@ struct MenuBarView: View {
     }
 
     var body: some View {
-        mainContent
-    }
-
-    private var mainContent: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
                 header
@@ -502,5 +497,4 @@ private struct PopoverWindowStyler: NSViewRepresentable {
 #Preview {
     MenuBarView()
         .environment(KeyStore())
-        .environment(LicenseService())
 }
