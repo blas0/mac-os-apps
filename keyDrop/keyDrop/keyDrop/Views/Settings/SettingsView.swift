@@ -330,6 +330,7 @@ private struct SettingsWindowStyler: NSViewRepresentable {
 
     private func apply(to view: NSView, coordinator: Coordinator) {
         guard let window = view.window else { return }
+        window.identifier = KeyDropWindowIdentifier.settings
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.styleMask.insert(.fullSizeContentView)

@@ -8,6 +8,8 @@ import SwiftUI
 
 @main
 struct KeyDropApp: App {
+    @NSApplicationDelegateAdaptor(KeyDropAppDelegate.self) private var appDelegate
+
     @AppStorage("themeOverride") private var themeOverrideRaw: String = ThemeOverride.system.rawValue
     @AppStorage("hasOnboarded") private var legacyHasOnboarded: Bool = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
@@ -86,5 +88,46 @@ struct KeyDropApp: App {
         case .dark:   imageName = "AppIconDark"
         }
         NSApp.applicationIconImage = imageName.flatMap { NSImage(named: $0) }
+    }
+}
+
+enum KeyDropWindowIdentifier {
+    static let settings = NSUserInterfaceItemIdentifier("com.neurix.keydrop.settings")
+}
+
+final class KeyDropAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowWillClose(_:)),
+            name: NSWindow.willCloseNotification,
+            object: nil
+        )
+    }
+
+    @objc private func windowWillClose(_ notification: Notification) {
+        guard
+            let window = notification.object as? NSWindow,
+            window.identifier == KeyDropWindowIdentifier.settings
+        else {
+            return
+        }
+
+        DispatchQueue.main.async {
+            guard !Self.hasVisibleRegularWindow else { return }
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    private static var hasVisibleRegularWindow: Bool {
+        NSApp.windows.contains { window in
+            window.isVisible &&
+            window.identifier != KeyDropWindowIdentifier.settings &&
+            window.canBecomeKey
+        }
     }
 }
