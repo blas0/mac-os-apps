@@ -8,31 +8,37 @@ import SwiftUI
 
 @main
 struct KeyDropApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage("themeOverride") private var themeOverrideRaw: String = ThemeOverride.system.rawValue
+    @AppStorage("hasOnboarded") private var legacyHasOnboarded: Bool = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var keyStore = KeyStore()
     @State private var updateService = UpdateService()
     @State private var licenseService = LicenseService()
 
+    private var shouldInsertMenuBar: Bool {
+        #if KEYDROP_CHANNEL_DIRECT
+        hasCompletedOnboarding && licenseService.isLicensed
+        #else
+        hasCompletedOnboarding
+        #endif
+    }
+
     var body: some Scene {
-        // Onboarding window - presented on first launch, suppressed after completion
         Window("Welcome to keyDrop", id: "onboarding") {
             OnboardingView {
                 hasCompletedOnboarding = true
             }
             .environment(licenseService)
+            .onAppear(perform: migrateLegacyOnboardingState)
         }
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
-        .defaultLaunchBehavior(hasCompletedOnboarding ? .suppressed : .presented)
+        .defaultLaunchBehavior(shouldInsertMenuBar ? .suppressed : .presented)
 
-        // Menu bar - inserted only after onboarding completes
-        MenuBarExtra("keyDrop", systemImage: "key.fill", isInserted: $hasCompletedOnboarding) {
+        MenuBarExtra("keyDrop", systemImage: "key.fill", isInserted: .constant(shouldInsertMenuBar)) {
             MenuBarView()
                 .environment(keyStore)
                 .environment(updateService)
-                .environment(licenseService)
                 .onAppear(perform: applyTheme)
                 .onChange(of: themeOverrideRaw) { _, _ in applyTheme() }
         }
@@ -60,6 +66,12 @@ struct KeyDropApp: App {
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
         applyAppIcon(for: override)
+    }
+
+    private func migrateLegacyOnboardingState() {
+        guard !hasCompletedOnboarding, legacyHasOnboarded else { return }
+        hasCompletedOnboarding = true
+        legacyHasOnboarded = false
     }
 
     /// Override the dock tile icon to track the user's theme choice.
