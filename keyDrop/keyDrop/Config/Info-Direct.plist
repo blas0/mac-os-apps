@@ -14,9 +14,5 @@
 	<false/>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
-	<key>SUEnableInstallerConnectionService</key>
-	<true/>
-	<key>SUEnableInstallerStatusService</key>
-	<true/>
 </dict>
 </plist>
