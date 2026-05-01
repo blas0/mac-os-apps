@@ -4,7 +4,13 @@
 
 **Transparent source code for keyDrop**
 
-A local, offline-only `API_KEY` storage keychain. Using Mac OS native Keychain + Secure Enclave.
+A local, offline-only `API_KEY` storage menu-bar app. Using Mac OS native Keychain + Secure Enclave.
+
+### Feature-flags
+- `API_KEY` copy clipboard life
+- Authentication grace limiting the pesky auth dialog pop-ups
+- Launch at login
+- View, edit, delete saved keys
 
 <img src="Marketing/README/x-menubar-view-blur.png" alt="keyDrop menu bar view">
 
