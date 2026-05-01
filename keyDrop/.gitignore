@@ -56,10 +56,6 @@ playground.xcworkspace
 .claude/
 .cursor/
 
-# Design assets / staging (not part of app target)
-Icon Exports/
-/keyDrop.icon/
-
 # Editors
 .idea/
 .vscode/
