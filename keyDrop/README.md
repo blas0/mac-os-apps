@@ -6,7 +6,7 @@
 
 A local, offline-only `API_KEY` storage menu-bar app. Using Mac OS native Keychain + Secure Enclave.
 
-<img src="Marketing/README/x-menubar-view-blur.png" alt="keyDrop menu bar view">
+<img src="Marketing/README/x-menubar-view-blur.png" alt="keyDrop menu bar view" width="50%">
 
 <img src="Marketing/README/keylist-view-blur.png" alt="keyDrop key list view">
 
