@@ -2,7 +2,7 @@
 
 <div align="center">
 
-Transparent source code for keyDrop
+**Transparent source code for keyDrop**
 
 A local, offline-only `API_KEY` storage keychain. Using Mac OS native Keychain + Secure Enclave.
 
