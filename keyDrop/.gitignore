@@ -68,3 +68,4 @@ playground.xcworkspace
 .env
 .env.*
 !.env.example
+keyDrop Assets/

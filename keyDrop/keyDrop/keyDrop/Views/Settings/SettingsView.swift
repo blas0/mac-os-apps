@@ -174,14 +174,6 @@ struct SettingsView: View {
                 .frame(width: 140)
             }
             formDivider
-            formRow("Auto-update") {
-                @Bindable var updates = updateService
-                Toggle("", isOn: $updates.automaticallyChecksForUpdates)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-            }
-            formDivider
             formRow("Updates") {
                 HStack(spacing: 12) {
                     Button {

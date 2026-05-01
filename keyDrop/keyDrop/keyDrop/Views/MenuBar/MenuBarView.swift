@@ -18,15 +18,7 @@ struct MenuBarView: View {
     private static let maxVisibleRecents = 5
     private static let recentRowHeight: CGFloat = 44
     private static let recentRowSpacing: CGFloat = 4
-    private static let pasteMinDelta = 2
     private static let toastLifetime: TimeInterval = 1.5
-
-    private static func didPaste(old: String, new: String) -> Bool {
-        guard new.count >= old.count + pasteMinDelta else { return false }
-        guard let clip = NSPasteboard.general.string(forType: .string), !clip.isEmpty else { return false }
-        let delta = new.count - old.count
-        return delta == clip.count && new.contains(clip)
-    }
 
     @State private var label: String = ""
     @State private var key: String = ""
@@ -141,13 +133,9 @@ struct MenuBarView: View {
                     .textFieldStyle(.plain)
                     .font(AppFont.body)
                     .focused($focusedField, equals: .label)
+                    .focusEffectDisabled()
                     .onSubmit { focusedField = .key }
-                    .onChange(of: label) { old, new in
-                        if Self.didPaste(old: old, new: new) {
-                            let keyFilled = !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            focusedField = keyFilled ? nil : .key
-                        }
-                    }
+                    .onKeyPress(.tab) { focusedField = .key; return .handled }
                     .modifier(IBeamCursor())
                     .modifier(RoundedFieldBackground(
                         cornerRadius: AppMetrics.popoverCornerRadius,
@@ -160,13 +148,9 @@ struct MenuBarView: View {
                     .textFieldStyle(.plain)
                     .font(AppFont.body)
                     .focused($focusedField, equals: .key)
+                    .focusEffectDisabled()
                     .onSubmit(submit)
-                    .onChange(of: key) { old, new in
-                        if Self.didPaste(old: old, new: new) {
-                            let labelFilled = !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            focusedField = labelFilled ? nil : .label
-                        }
-                    }
+                    .onKeyPress(.tab) { focusedField = .label; return .handled }
                     .modifier(IBeamCursor())
                     .modifier(RoundedFieldBackground(
                         cornerRadius: AppMetrics.popoverCornerRadius,
@@ -423,7 +407,7 @@ private struct RoundedFieldBackground: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(
                         isFocused ? Color.accentColor : Color.secondary.opacity(0.25),
-                        lineWidth: isFocused ? 1.5 : 1
+                        lineWidth: 1
                     )
             )
     }

@@ -2,8 +2,8 @@
 // Single source of truth for app version and team identity.
 // Wire in Xcode: Project > Info > Configurations > set Debug + Release base config to this file.
 
-MARKETING_VERSION = 1.1.4
-CURRENT_PROJECT_VERSION = 7
+MARKETING_VERSION = 1.1.5
+CURRENT_PROJECT_VERSION = 8
 
 DEVELOPMENT_TEAM = 83698ZGFJP
 MACOSX_DEPLOYMENT_TARGET = 26.2
