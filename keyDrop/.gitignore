@@ -70,4 +70,8 @@ playground.xcworkspace
 .env
 .env.*
 !.env.example
+
+# XTRA
 keyDrop Assets/
+CLAUDE.md
+AGENTS.md
