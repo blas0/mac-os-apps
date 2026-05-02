@@ -76,6 +76,7 @@ struct MenuBarView: View {
         .overlay(alignment: .bottom) { toastView }
         .onAppear { focusedField = .label }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            guard !store.auth.shouldPinMenu else { return }
             Self.dismissPopover()
         }
     }

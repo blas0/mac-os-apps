@@ -9,14 +9,24 @@ import Observation
 
 @Observable
 final class AuthService {
-    var graceDuration: TimeInterval = 5 * 60
+    private static let graceKey = "authGraceSeconds"
+
+    var graceDuration: TimeInterval {
+        get {
+            let raw = UserDefaults.standard.integer(forKey: Self.graceKey)
+            return raw > 0 ? TimeInterval(raw) : 5 * 60
+        }
+        set {
+            UserDefaults.standard.set(Int(newValue), forKey: Self.graceKey)
+        }
+    }
+
     private(set) var graceExpiresAt: Date?
     private(set) var isAuthenticating: Bool = false
     private(set) var authHoldUntil: Date?
 
     var onInvalidate: (() -> Void)?
 
-    private var cachedContext: LAContext?
     private var graceTimer: Timer?
 
     var isWithinGrace: Bool {
@@ -41,27 +51,13 @@ final class AuthService {
         authHoldUntil = Date().addingTimeInterval(3.0)
     }
 
-    func contextForRead() -> LAContext {
-        if let ctx = cachedContext, isWithinGrace {
-            return ctx
-        }
-        let ctx = LAContext()
-        ctx.localizedReason = "Unlock your stored key"
-        let cap = min(graceDuration, LATouchIDAuthenticationMaximumAllowableReuseDuration)
-        ctx.touchIDAuthenticationAllowableReuseDuration = cap
-        return ctx
-    }
-
     func didAuthenticate(with context: LAContext) {
-        cachedContext = context
         let expires = Date().addingTimeInterval(graceDuration)
         graceExpiresAt = expires
         scheduleExpiration(at: expires)
     }
 
     func invalidate() {
-        cachedContext?.invalidate()
-        cachedContext = nil
         graceExpiresAt = nil
         graceTimer?.invalidate()
         graceTimer = nil

@@ -13,7 +13,7 @@ struct SettingsView: View {
     @AppStorage("showRecentList") private var showRecentList: Bool = true
     @AppStorage("clipboardClearSeconds") private var clipboardClearSeconds: Int = 30
 
-    @State private var graceSeconds: Int = Self.graceOptions[0].seconds
+    @AppStorage("authGraceSeconds") private var graceSeconds: Int = Self.graceOptions[0].seconds
     @State private var launchAtLogin: Bool = LaunchAtLoginService.isEnabled
     @State private var pane: SettingsPane = .preferences
 
