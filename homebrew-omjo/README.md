@@ -1,7 +1,7 @@
 # homebrew-omjo (oh-my-just-open)
 <div align="center">
 
-<img src="polaroids/avatar.png">
+<img src="polaroids/avatar.png" width="25%">
 
 [`oh-my-just-open`](https://github.com/blas0/oh-my-just-open) — a minimal macOS default-app manager.
 
