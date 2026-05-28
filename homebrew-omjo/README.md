@@ -31,8 +31,7 @@ The app ships ad-hoc signed instead of going through Apple's Developer ID + nota
 
 **Updates**
 
-The cask sets `auto_updates true`, which tells brew that the app updates itself. [Sparkle](https://sparkle-project.org/) inside the app handles version checks and applies updates in place — `brew upgrade --cask` is a no-op for this app.
-
+`brew upgrade --cask oh-my-just-open` pulls the latest version. There is no in-app updater — Homebrew is the update channel.
 
 **Pull requests**
 
@@ -45,7 +44,7 @@ brew uninstall --cask oh-my-just-open
 brew untap blas0/omjo            # optional
 ```
 
-`brew uninstall --cask --zap oh-my-just-open` also clears preferences and Sparkle's update cache.
+`brew uninstall --cask --zap oh-my-just-open` also clears the app's preferences and caches.
 
 <br>
 
