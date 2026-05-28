@@ -1,6 +1,8 @@
 # homebrew-omjo (oh-my-just-open)
 <div align="center">
-  
+
+<img src="polaroids/avatar.png">
+
 [`oh-my-just-open`](https://github.com/blas0/oh-my-just-open) — a minimal macOS default-app manager.
 
 </div>
@@ -53,7 +55,13 @@ A more intuitive interface for setting default applications for specific file ex
 
 Yes you can probably just prompt your agent to do so – but that's overrated.
 
-
+<div>
+  <img src="polaroids/about.png" width="90%">
+  <br>
+  <img src="polaroids/urls.png" width="90%">
+  <br>
+  <img src="polaroids/files.png" width="90%">
+</div>
 
 ## License
 
