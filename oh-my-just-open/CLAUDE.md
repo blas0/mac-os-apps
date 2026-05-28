@@ -36,10 +36,12 @@ oh-my-just-open/                  # repo root (== inner dir containing .xcodepro
 │   ├── release-unsigned.sh       # build the DMG (ad-hoc signed)
 │   ├── oh-my-just-open.rb.template   # reference cask (live cask lives in blas0/homebrew-omjo)
 │   └── .env.release.example      # placeholder; no env vars needed for the current flow
-├── homebrew-tap/                 # SKELETON copied into blas0/homebrew-omjo (separate repo)
+├── homebrew-tap/                 # SKELETON only — historical; live cask lives in blas0/homebrew-omjo
 │   ├── Casks/oh-my-just-open.rb
 │   └── README.md
+├── polaroids/                    # README screenshots + avatar
 ├── dist/                         # gitignored — DMG artifact lands here
+├── CHANGELOG.md
 ├── README.md
 └── CLAUDE.md                     # this file
 ```
@@ -54,20 +56,26 @@ is required for the current Homebrew-only flow.
 This is the flow that ships releases today. Do it from `main` after the
 PR for whatever change is being released has merged.
 
-### 1. Bump the version
+**Hard rule:** never push directly to `main` on either repo. Every
+version bump and every cask bump goes through a branch + PR + squash
+merge, even single-line edits. The repos enforce this via tooling, and
+the rest of this section assumes you're doing it that way.
 
-Edit `Config/Version.xcconfig`:
-
-```
-MARKETING_VERSION = 1.0.1        # user-visible (semver)
-CURRENT_PROJECT_VERSION = 2      # monotonic build counter
-```
-
-Commit + push:
+### 1. Bump the version (PR)
 
 ```sh
+git checkout main && git pull
+git checkout -b chore/release-v1.0.1
+
+# Edit Config/Version.xcconfig:
+#   MARKETING_VERSION = 1.0.1        # user-visible (semver)
+#   CURRENT_PROJECT_VERSION = 2      # monotonic build counter
+
 git commit -am "chore: release v1.0.1"
-git push origin main
+git push -u origin chore/release-v1.0.1
+gh pr create --title "chore: release v1.0.1" --body "Version bump for v1.0.1."
+gh pr merge --squash --delete-branch
+git checkout main && git pull
 ```
 
 ### 2. Build the DMG
@@ -93,9 +101,11 @@ Flag: `--dry-run` (no side effects).
 
 ### 3. Tag, push, GitHub release
 
+Tags can be pushed directly (they're metadata, not branch history):
+
 ```sh
 git tag -a v1.0.1 -m "Release 1.0.1"
-git push origin main --tags
+git push origin v1.0.1
 
 gh release create v1.0.1 \
   dist/oh-my-just-open-1.0.1.dmg \
@@ -105,29 +115,17 @@ gh release create v1.0.1 \
 
 The Homebrew cask URL points at
 `github.com/blas0/oh-my-just-open/releases/download/v$VERSION/...`, and
-the README's "Direct download" link uses
-`github.com/blas0/oh-my-just-open/releases/latest/download/oh-my-just-open.dmg`
-— both update automatically once the release exists.
+resolves as soon as the release exists.
 
-### 4. Update the Homebrew tap
+### 4. Update the Homebrew tap (PR)
 
 The tap is a **separate GitHub repo**: `blas0/homebrew-omjo` (cloned to
-`~/Documents/Code/homebrew-omjo`). End users install via
+`~/Documents/Code/homebrew-omjo`). It's already initialized and live —
+the one-time `gh repo create` / cask seed dance is **historical**; you
+should never need it again. End users install via
 `brew tap blas0/omjo && brew install --cask oh-my-just-open`.
 
-One-time setup (only the first time, ever):
-
-```sh
-gh repo create <YOUR_GH_USER>/homebrew-omjo --public --description "Homebrew tap for oh-my-just-open"
-cd "$REPO_PARENT"   # parent dir where you keep checkouts
-git clone git@github.com:<YOUR_GH_USER>/homebrew-omjo.git
-cd homebrew-omjo
-mkdir -p Casks
-cp "$APP_REPO_ROOT/homebrew-tap/Casks/oh-my-just-open.rb" Casks/
-git add . && git commit -m "Initial cask for oh-my-just-open" && git push
-```
-
-**Every release after that:**
+**Every release:**
 
 ```sh
 VERSION=1.0.1
@@ -135,21 +133,42 @@ DIST_DIR="$APP_REPO_ROOT/dist"
 SHA256=$(shasum -a 256 "$DIST_DIR/oh-my-just-open-${VERSION}.dmg" | awk '{print $1}')
 
 cd "$TAP_REPO_ROOT"
+git checkout main && git pull
+git checkout -b "cask/v${VERSION}"
+
 sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/oh-my-just-open.rb
 sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"${SHA256}\"/" Casks/oh-my-just-open.rb
 
-brew audit --cask Casks/oh-my-just-open.rb
-brew install --cask --force ./Casks/oh-my-just-open.rb
-brew uninstall --cask oh-my-just-open    # cleanup after the test
-
 git add Casks/oh-my-just-open.rb
 git commit -m "oh-my-just-open ${VERSION}"
-git push
+git push -u origin "cask/v${VERSION}"
+
+gh pr create --title "oh-my-just-open ${VERSION}" \
+  --body "DMG: https://github.com/blas0/oh-my-just-open/releases/tag/v${VERSION}
+sha256: \`${SHA256}\`"
+gh pr merge --squash --delete-branch
+git checkout main && git pull
+```
+
+**Do NOT run `brew audit --cask Casks/oh-my-just-open.rb`** — Homebrew
+disabled `brew audit [path ...]` in favor of `brew audit [name ...]`.
+For ad-hoc tap edits there's no useful pre-merge audit step; the cask
+either installs or it doesn't. If you want a smoke test, install from
+the tap *after* the PR merges:
+
+```sh
+brew untap blas0/omjo && brew tap blas0/omjo   # forces cache refresh
+brew install --cask oh-my-just-open
 ```
 
 That's the entire release cycle. Existing users get the new version via
 `brew upgrade --cask oh-my-just-open` (or whenever their `brew upgrade`
 cron fires).
+
+**Cache invalidation gotcha:** Homebrew caches the tap on each user's
+machine. After a cask bump, a user who already had the tap may need
+`brew update` (or `brew untap && brew tap` for a hard refresh) before
+the new version shows up. This is normal Homebrew behavior, not a bug.
 
 ### Verification
 
@@ -194,6 +213,9 @@ shipping path.
 - **Don't edit the tap cask file from this repo.** The skeleton under
   `homebrew-tap/` is a template only. The live cask is in
   `blas0/homebrew-omjo`; edit it there, commit there, push there.
+- **PR-only — no direct pushes to `main`.** Both repos. Even one-line
+  cask sha bumps and version bumps go through a branch + PR + squash
+  merge. The only thing you can push directly to a repo is a tag.
 
 ---
 
@@ -205,7 +227,18 @@ shipping path.
 - `spctl --assess` failing on the DMG is expected (unsigned). Don't
   treat that as a release blocker.
 - The GitHub-Releases "latest" permalink only works once at least one
-  release is tagged. Until then, the README's direct-download link 404s.
+  release is tagged. v1.0.0 is tagged, so this is no longer a concern
+  going forward.
+- **Cask sha placeholder gotcha:** the initial cask was seeded with a
+  `0000...` sha256 to make the file valid before any DMG existed. If
+  you ever re-seed a cask (or copy this pattern for another app),
+  remember the sha must be bumped to the real DMG hash *before* anyone
+  runs `brew install` against it — otherwise install fails with a
+  hash-mismatch even if the DMG is fine.
+- **`gh pr merge --delete-branch` deletes the local branch too** on
+  recent gh versions, then auto-checks out main. If you see "branch
+  not found" trying to delete it manually afterwards, that's why —
+  it's already gone.
 
 ---
 
