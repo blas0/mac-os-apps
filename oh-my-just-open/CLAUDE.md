@@ -12,13 +12,11 @@ SwiftUI macOS 26.2 app that lets users pick the default app for any URL
 scheme or file type. Functionally a free clone of OpenIn 4. Bundle ID
 `com.neurix.oh-my-just-open`, team `83698ZGFJP` (Neurix), MIT licensed.
 
-In-app updates via **Sparkle 2** (EdDSA-signed appcast).
-Distribution: **ad-hoc signed** DMG hosted on Cloudflare R2, plus a
-**self-hosted Homebrew tap** at `blas0/homebrew-omjo`.
-
-The Apple Developer Program agreement has expired and isn't renewable
-right now, so the release pipeline does **not** notarize. Sparkle's EdDSA
-signature is the only integrity check on updates — keep it that way.
+Distribution: **ad-hoc signed** DMG attached to a GitHub Release, surfaced
+to users via a **self-hosted Homebrew tap** at `blas0/homebrew-omjo`.
+There is no in-app updater — `brew upgrade --cask oh-my-just-open` is the
+update channel. The Apple Developer Program agreement is currently
+inactive, so the release pipeline does **not** notarize.
 
 ---
 
@@ -29,41 +27,29 @@ oh-my-just-open/                  # repo root (== inner dir containing .xcodepro
 ├── oh-my-just-open.xcodeproj/
 ├── oh-my-just-open/              # app sources
 │   ├── oh_my_just_openApp.swift
-│   ├── Services/UpdateService.swift   # Sparkle wrapper
 │   └── ...
 ├── Config/
 │   ├── Version.xcconfig          # MARKETING_VERSION + CURRENT_PROJECT_VERSION (single source of truth)
-│   ├── Distribution.xcconfig     # sandbox + hardened runtime + Info.plist path
-│   ├── Sparkle-Info.plist        # SUFeedURL, SUPublicEDKey, update behaviour
-│   └── oh-my-just-open.entitlements   # sandbox + Sparkle XPC mach-lookup exceptions
+│   ├── Distribution.xcconfig     # sandbox + hardened runtime
+│   └── oh-my-just-open.entitlements   # sandbox
 ├── scripts/
-│   ├── release.sh                # notarized path (needs active Apple Dev agreement)
-│   ├── release-unsigned.sh       # ad-hoc path (current shipping path)
-│   ├── generate-sparkle-key.sh   # one-time EdDSA key generator
-│   ├── ExportOptions.plist       # only used by release.sh
-│   ├── .env.release              # gitignored — R2 creds + signing identity
-│   └── .env.release.example      # template (committed)
+│   ├── release-unsigned.sh       # build the DMG (ad-hoc signed)
+│   ├── oh-my-just-open.rb.template   # reference cask (live cask lives in blas0/homebrew-omjo)
+│   └── .env.release.example      # placeholder; no env vars needed for the current flow
 ├── homebrew-tap/                 # SKELETON copied into blas0/homebrew-omjo (separate repo)
 │   ├── Casks/oh-my-just-open.rb
 │   └── README.md
-├── Release/
-│   └── appcast.xml               # rewritten by release scripts, then committed
+├── dist/                         # gitignored — DMG artifact lands here
 ├── README.md
 └── CLAUDE.md                     # this file
 ```
 
-Secrets that **must never** be committed:
-
-- `scripts/.env.release` (R2 access key + secret, account ID)
-- `~/.omjo-keys/sparkle_eddsa_seed.txt` (Sparkle private seed — outside repo)
-- Notary keychain profile `omjo-notary` (in macOS Keychain; not on disk)
-
-If any of those leak into a commit, abort and rotate the credential before
-pushing.
+There are no project secrets to manage. Nothing in `scripts/.env.release*`
+is required for the current Homebrew-only flow.
 
 ---
 
-## Release & update flow (ad-hoc / unsigned — current path)
+## Release & update flow (ad-hoc / unsigned)
 
 This is the flow that ships releases today. Do it from `main` after the
 PR for whatever change is being released has merged.
@@ -74,12 +60,8 @@ Edit `Config/Version.xcconfig`:
 
 ```
 MARKETING_VERSION = 1.0.1        # user-visible (semver)
-CURRENT_PROJECT_VERSION = 2      # monotonic build counter — Sparkle compares this
+CURRENT_PROJECT_VERSION = 2      # monotonic build counter
 ```
-
-Sparkle uses `CURRENT_PROJECT_VERSION` (`sparkle:version` in the appcast)
-to decide whether an update is newer. It **must** strictly increase every
-release. `MARKETING_VERSION` is what users see.
 
 Commit + push:
 
@@ -88,7 +70,7 @@ git commit -am "chore: release v1.0.1"
 git push origin main
 ```
 
-### 2. Build, sign, upload
+### 2. Build the DMG
 
 ```sh
 ./scripts/release-unsigned.sh
@@ -102,30 +84,30 @@ What the script does, in order:
 | 1 | Clean `build/` |
 | 2 | `xcodebuild archive` with `CODE_SIGN_IDENTITY=-` (ad-hoc) |
 | 3 | Copy `.app` out of the `.xcarchive`, re-sign with `codesign --force --deep --options runtime --sign -`, then verify with `codesign --verify --deep --strict` |
-| 4 | (notarize step — skipped) |
-| 5 | Build DMG via `hdiutil`, ad-hoc sign the DMG |
-| 6 | `ditto -c -k --keepParent` → Sparkle ZIP |
-| 7 | EdDSA sign the ZIP via Sparkle's `sign_update` against `~/.omjo-keys/sparkle_eddsa_seed.txt` — **fails the build** if the key or `sign_update` binary isn't found |
-| 8 | Prepend a new `<item>` block into `Release/appcast.xml` (inserted right after `<language>`) |
-| 9 | Upload to R2: `releases/$ZIP_NAME`, `releases/$DMG_NAME`, `releases/oh-my-just-open-latest.dmg` (stable pointer, `max-age=300`), and `appcast.xml` at the bucket root (`max-age=300`) |
+| 4 | Build DMG via `hdiutil`, ad-hoc sign the DMG |
 
-Flags: `--dry-run` (no side effects), `--skip-upload` (build only, no R2).
+The script prints the next-step commands (tag, push, GitHub release, cask
+bump) at the end with the computed sha256 baked in.
+
+Flag: `--dry-run` (no side effects).
 
 ### 3. Tag, push, GitHub release
 
-The script prints the exact commands at the end. Concretely:
-
 ```sh
-git add Release/appcast.xml
-git commit -m "release: v1.0.1"
 git tag -a v1.0.1 -m "Release 1.0.1"
 git push origin main --tags
 
 gh release create v1.0.1 \
-  Release/oh-my-just-open-1.0.1.dmg \
+  dist/oh-my-just-open-1.0.1.dmg \
   --title "v1.0.1" \
   --notes "See CHANGELOG.md for details."
 ```
+
+The Homebrew cask URL points at
+`github.com/blas0/oh-my-just-open/releases/download/v$VERSION/...`, and
+the README's "Direct download" link uses
+`github.com/blas0/oh-my-just-open/releases/latest/download/oh-my-just-open.dmg`
+— both update automatically once the release exists.
 
 ### 4. Update the Homebrew tap
 
@@ -142,8 +124,6 @@ git clone git@github.com:<YOUR_GH_USER>/homebrew-omjo.git
 cd homebrew-omjo
 mkdir -p Casks
 cp "$APP_REPO_ROOT/homebrew-tap/Casks/oh-my-just-open.rb" Casks/
-# Author a top-level README for the tap repo (the skeleton README is for
-# developers of *this* repo, not for tap users — write a short one here).
 git add . && git commit -m "Initial cask for oh-my-just-open" && git push
 ```
 
@@ -151,31 +131,25 @@ git add . && git commit -m "Initial cask for oh-my-just-open" && git push
 
 ```sh
 VERSION=1.0.1
-RELEASE_DIR="$APP_REPO_ROOT/Release"
-SHA256=$(shasum -a 256 "$RELEASE_DIR/oh-my-just-open-${VERSION}.dmg" | awk '{print $1}')
+DIST_DIR="$APP_REPO_ROOT/dist"
+SHA256=$(shasum -a 256 "$DIST_DIR/oh-my-just-open-${VERSION}.dmg" | awk '{print $1}')
 
 cd "$TAP_REPO_ROOT"
-# Update the cask in place. The cask file has exactly one `version "..."`
-# line and one `sha256 "..."` line, so sed is safe.
 sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/oh-my-just-open.rb
 sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"${SHA256}\"/" Casks/oh-my-just-open.rb
 
-# Audit before pushing — catches typos, missing fields, bad URLs.
 brew audit --cask Casks/oh-my-just-open.rb
-
-# Optional: local install test from the file path.
 brew install --cask --force ./Casks/oh-my-just-open.rb
-brew uninstall --cask oh-my-just-open    # clean up after the test
+brew uninstall --cask oh-my-just-open    # cleanup after the test
 
 git add Casks/oh-my-just-open.rb
 git commit -m "oh-my-just-open ${VERSION}"
 git push
 ```
 
-That's the entire release cycle. The cask `auto_updates true` directive
-tells brew that Sparkle handles in-place upgrades, so users who already
-installed via brew get future versions through the in-app updater rather
-than `brew upgrade`.
+That's the entire release cycle. Existing users get the new version via
+`brew upgrade --cask oh-my-just-open` (or whenever their `brew upgrade`
+cron fires).
 
 ### Verification
 
@@ -183,39 +157,27 @@ After step 2 (before tagging) — sanity-check the artifacts:
 
 ```sh
 codesign -dv --verbose=4 build/export/oh-my-just-open.app  # expect "Signature=adhoc"
-hdiutil verify Release/oh-my-just-open-1.0.1.dmg
-curl -sI https://pub-06563b7bc8e246b69c21fe5af1f67b88.r2.dev/releases/oh-my-just-open-latest.dmg  # expect 200
-curl -s https://pub-06563b7bc8e246b69c21fe5af1f67b88.r2.dev/appcast.xml | head -40  # confirm new <item>
+hdiutil verify dist/oh-my-just-open-1.0.1.dmg
 ```
 
-`spctl --assess --type install Release/*.dmg` will say *rejected
+`spctl --assess --type install dist/*.dmg` will say *rejected
 (Unnotarized)* — that's **expected** and not a failure.
-
-In-app update path: install the previous version, lower the local
-`MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` for testing, launch, "Check
-for Updates…" should detect the new appcast entry.
 
 ---
 
 ## When the Apple Dev agreement comes back
 
-If/when the Apple Developer Program agreement is renewed, switch back to
-`./scripts/release.sh` (notarized path). The notarized DMG passes
-Gatekeeper without any user friction, and the Homebrew tap can stay as-is
-or migrate to the official `homebrew/cask` repo (which requires
-notarization).
-
-The two scripts share the same `.env.release`, same version source, same
-appcast format, and same EdDSA key — so switching is a one-line change in
-the docs, nothing else.
+If/when the Apple Developer Program agreement is renewed, we can add a
+notarized variant of the release script (Developer ID signing + `xcrun
+notarytool submit` + `xcrun stapler staple`) and migrate the cask off
+the self-hosted tap toward the official `homebrew/cask` repo (which
+requires notarization). Until then, the ad-hoc + tap path is the only
+shipping path.
 
 ---
 
 ## Hard rules (project-specific)
 
-- **Never write secrets into the repo.** Not in commits, not in error
-  messages, not in PR descriptions, not in this file. R2 credentials,
-  Sparkle private key, notary password all live outside `git ls-files`.
 - **Never identify the maintainer's personal accounts in committed files
   or git history.** Only the Neurix-branded identity is permitted in
   anything that ships: signing identity `Neurix (83698ZGFJP)`, contact
@@ -223,16 +185,12 @@ the docs, nothing else.
   repos. Any other personal usernames, legacy email aliases, or local
   user paths (`/Users/<name>/...`) must be scrubbed before commit — use
   `~/`, `$HOME`, or a named variable instead.
-- **Don't bump `CURRENT_PROJECT_VERSION` non-monotonically.** Sparkle uses
-  it as the ordering key; going down strands existing users.
-- **Don't ship a Sparkle update without an EdDSA signature.**
-  `release-unsigned.sh` enforces this — don't add a flag to bypass it.
-- **Don't notarize from this script-set right now.** The Apple agreement
-  is expired; calls to `notarytool submit` will 403. Use
-  `release-unsigned.sh` until the agreement is renewed.
+- **Don't bump `CURRENT_PROJECT_VERSION` non-monotonically.** Keep it
+  strictly increasing — easier on future-us if we ever wire an in-app
+  updater back in.
 - **Tag format is `v<MARKETING_VERSION>`** (`v1.0.1`, not `1.0.1` or
-  `release-1.0.1`). The Homebrew cask's `livecheck` and the appcast both
-  assume that.
+  `release-1.0.1`). The Homebrew cask's `livecheck` and the GitHub
+  Releases "latest" permalink both depend on that.
 - **Don't edit the tap cask file from this repo.** The skeleton under
   `homebrew-tap/` is a template only. The live cask is in
   `blas0/homebrew-omjo`; edit it there, commit there, push there.
@@ -244,25 +202,15 @@ the docs, nothing else.
 - `Config/Version.xcconfig` uses ` = ` as the separator (note the
   spaces). The release script's `awk -F' = '` parser depends on that — if
   you reformat the file, update the parser.
-- `scripts/.env.release.example` contains a quoted `SIGNING_IDENTITY` —
-  the parens in `Neurix (83698ZGFJP)` are subshell syntax in bash, so the
-  quotes are load-bearing.
-- The xcconfig `https:/$()/...` trick exists because `//` is the xcconfig
-  comment marker. Don't "fix" it.
-- Sparkle's `sign_update` binary lives inside `DerivedData/.../
-  SourcePackages/artifacts/sparkle/Sparkle/bin/`. If the script can't
-  find it, build the project once in Xcode to resolve the SwiftPM
-  package, then re-run.
 - `spctl --assess` failing on the DMG is expected (unsigned). Don't
   treat that as a release blocker.
+- The GitHub-Releases "latest" permalink only works once at least one
+  release is tagged. Until then, the README's direct-download link 404s.
 
 ---
 
 ## Pointers
 
-- Live appcast: `https://pub-06563b7bc8e246b69c21fe5af1f67b88.r2.dev/appcast.xml`
-- Latest DMG (stable URL): `https://pub-06563b7bc8e246b69c21fe5af1f67b88.r2.dev/releases/oh-my-just-open-latest.dmg`
 - GitHub repo: `https://github.com/blas0/oh-my-just-open`
-- Homebrew tap repo (to-be-created): `https://github.com/blas0/homebrew-omjo`
-- Sparkle docs: `https://sparkle-project.org/documentation/`
-- Cloudflare R2 bucket: `oh-my-just-open` (account ID lives in `scripts/.env.release`, not in this file)
+- Homebrew tap repo: `https://github.com/blas0/homebrew-omjo`
+- Releases (DMGs live here): `https://github.com/blas0/oh-my-just-open/releases`
