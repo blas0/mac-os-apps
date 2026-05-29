@@ -7,7 +7,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(KeyStore.self) private var store
-    @Environment(UpdateService.self) private var updateService
 
     @AppStorage("themeOverride") private var themeOverrideRaw: String = ThemeOverride.system.rawValue
     @AppStorage("showRecentList") private var showRecentList: Bool = true
@@ -172,29 +171,6 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
                 .labelsHidden()
                 .frame(width: 140)
-            }
-            formDivider
-            formRow("Updates") {
-                HStack(spacing: 12) {
-                    Button {
-                        updateService.checkForUpdates()
-                    } label: {
-                        if updateService.isCheckingForUpdates {
-                            ProgressView()
-                                .controlSize(.small)
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Text("Check for Updates")
-                        }
-                    }
-                    .disabled(!updateService.canCheckForUpdates || updateService.isCheckingForUpdates)
-
-                    if let lastCheck = updateService.lastUpdateCheckDate {
-                        Text("Last: \(lastCheck, format: .relative(presentation: .named))")
-                            .font(AppFont.small)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
         }
         .padding(20)

@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0B5PARK1E2FA00002001A018C /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 0B5PARK1E2FA00001001A018C /* Sparkle */; };
 		0BBC7EA42F9AF8E200E3BAEA /* Version.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0BBC7EA32F9AF8E100E3BAEA /* Version.xcconfig */; };
 		0BBC7EA72F9AF8F700E3BAEA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0BBC7EA62F9AF8F700E3BAEA /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -75,7 +74,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0B5PARK1E2FA00002001A018C /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -140,7 +138,6 @@
 			);
 			name = keyDrop;
 			packageProductDependencies = (
-				0B5PARK1E2FA00001001A018C /* Sparkle */,
 			);
 			productName = keyDrop;
 			productReference = 0BF697F12F955644001A018C /* keyDrop.app */;
@@ -225,7 +222,6 @@
 			mainGroup = 0BF697E82F955644001A018C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				0B5PARK1E2FA00000001A018C /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0BF697F22F955644001A018C /* Products */;
@@ -752,24 +748,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		0B5PARK1E2FA00000001A018C /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.6.4;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		0B5PARK1E2FA00001001A018C /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0B5PARK1E2FA00000001A018C /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0BF697E92F955644001A018C /* Project object */;
 }

@@ -10,9 +10,20 @@ A local, offline-only `API_KEY` storage menu-bar app. Using Mac OS native Keycha
 
 <img src="Marketing/README/keylist-view-blur.png" alt="keyDrop key list view">
 
-Show support by purchasing the app via Gumroad.
+Install with Homebrew:
 
-[keyDrop](https://www.neurix.co/keydrop)
+```sh
+brew tap blas0/keydrop
+brew install --cask keydrop
+```
+
+Updates ship with:
+
+```sh
+brew upgrade --cask keydrop
+```
+
+[keyDrop](https://www.neurix.co/keydrop) · [Source](https://github.com/blas0/keyDrop)
 
 </div>
 

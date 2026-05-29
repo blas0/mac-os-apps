@@ -14,15 +14,10 @@ struct KeyDropApp: App {
     @AppStorage("hasOnboarded") private var legacyHasOnboarded: Bool = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var keyStore = KeyStore()
-    @State private var updateService = UpdateService()
     @State private var licenseService = LicenseService()
 
     private var shouldInsertMenuBar: Bool {
-        #if KEYDROP_CHANNEL_DIRECT
-        hasCompletedOnboarding && licenseService.isLicensed
-        #else
         hasCompletedOnboarding
-        #endif
     }
 
     var body: some Scene {
@@ -40,7 +35,6 @@ struct KeyDropApp: App {
         MenuBarExtra("keyDrop", systemImage: "key.fill", isInserted: .constant(shouldInsertMenuBar)) {
             MenuBarView()
                 .environment(keyStore)
-                .environment(updateService)
                 .onAppear(perform: applyTheme)
                 .onChange(of: themeOverrideRaw) { _, _ in applyTheme() }
         }
@@ -49,7 +43,6 @@ struct KeyDropApp: App {
         Settings {
             SettingsView()
                 .environment(keyStore)
-                .environment(updateService)
                 .environment(licenseService)
                 .onAppear(perform: applyTheme)
                 .onChange(of: themeOverrideRaw) { _, _ in applyTheme() }
