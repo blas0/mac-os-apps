@@ -75,3 +75,6 @@ playground.xcworkspace
 keyDrop Assets/
 CLAUDE.md
 AGENTS.md
+
+# Signing certificates
+*.cer
