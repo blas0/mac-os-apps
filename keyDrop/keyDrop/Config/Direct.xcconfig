@@ -1,0 +1,19 @@
+// Direct.xcconfig
+// Homebrew distribution configuration.
+// Use in Xcode: duplicate Debug/Release configurations as "Debug-Direct" / "Release-Direct"
+// and set their Based on Configuration File to this xcconfig.
+
+#include "Version.xcconfig"
+
+KEYDROP_DISTRIBUTION_CHANNEL = DIRECT
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) KEYDROP_CHANNEL_DIRECT
+
+CODE_SIGN_ENTITLEMENTS = keyDrop/keyDrop.Direct.entitlements
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+PROVISIONING_PROFILE_SPECIFIER =
+DEVELOPMENT_TEAM =
+// Homebrew releases are ad-hoc signed DMGs attached to GitHub Releases.
+
+ENABLE_APP_SANDBOX = YES
+ENABLE_HARDENED_RUNTIME = YES
