@@ -119,10 +119,15 @@ resolves as soon as the release exists.
 
 ### 4. Update the Homebrew tap (PR)
 
-The tap is a **separate GitHub repo**: `blas0/homebrew-omjo` (cloned to
-`~/Documents/Code/homebrew-omjo`). It's already initialized and live —
-the one-time `gh repo create` / cask seed dance is **historical**; you
-should never need it again. End users install via
+The tap source of truth is the sibling directory in this monorepo:
+`~/Documents/Code/mac-os-apps/homebrew-omjo`. Edit the cask there.
+
+Homebrew requires `brew tap blas0/omjo` to resolve to a standalone repo
+named `homebrew-omjo` at the account root, so `blas0/homebrew-omjo`
+remains live purely as a **publish target**. Push cask changes to it with
+`./homebrew-omjo/publish-tap.sh` from the monorepo root; never edit that
+repo directly. The one-time `gh repo create` / cask seed dance is
+**historical**; you should never need it again. End users install via
 `brew tap blas0/omjo && brew install --cask oh-my-just-open`.
 
 **Every release:**

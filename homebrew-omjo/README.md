@@ -37,6 +37,11 @@ The app ships ad-hoc signed instead of going through Apple's Developer ID + nota
 
 Submit a PR if you have a feature/suggestion &or a bug discovered.
 
+Source of truth for this tap is [`blas0/mac-os-apps`](https://github.com/blas0/mac-os-apps)
+under `homebrew-omjo/` — open PRs there. The standalone `blas0/homebrew-omjo`
+repo exists because Homebrew requires that name for `brew tap blas0/omjo` to
+resolve; it is published to, not edited directly.
+
 **Uninstall**
 
 ```sh
