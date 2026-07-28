@@ -4,7 +4,9 @@
 # the tap repo is a publish target only.
 set -euo pipefail
 
-TAP_REPO="git@github.com:blas0/homebrew-omjo.git"
+# HTTPS, not SSH — this account authenticates git over https via the gh
+# credential helper (`gh auth status` → "Git operations protocol: https").
+TAP_REPO="https://github.com/blas0/homebrew-omjo.git"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CASK="$SRC/Casks/oh-my-just-open.rb"
 
@@ -20,6 +22,12 @@ git clone --quiet --depth 1 "$TAP_REPO" "$WORK/tap"
 rsync -a --delete --exclude '.git' --exclude 'publish-tap.sh' "$SRC/" "$WORK/tap/"
 
 cd "$WORK/tap"
+
+# The global git identity uses a private address that GitHub's email-privacy
+# setting rejects on push. Commit as the noreply address instead.
+git config user.name "blas0"
+git config user.email "144485528+blas0@users.noreply.github.com"
+
 if git diff --quiet && git diff --cached --quiet; then
   echo "tap already up to date at v$VERSION — nothing to publish"
   exit 0
