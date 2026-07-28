@@ -23,7 +23,7 @@ Updates ship with:
 brew upgrade --cask keydrop
 ```
 
-[keyDrop](https://www.neurix.co/keydrop) · [Source](https://github.com/blas0/keyDrop)
+[keyDrop](https://www.neurix.co/keydrop) · [Source](https://github.com/blas0/mac-os-apps/tree/main/keyDrop)
 
 </div>
 

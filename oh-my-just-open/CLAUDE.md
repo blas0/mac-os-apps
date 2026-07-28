@@ -101,21 +101,27 @@ Flag: `--dry-run` (no side effects).
 
 ### 3. Tag, push, GitHub release
 
-Tags can be pushed directly (they're metadata, not branch history):
+Tags can be pushed directly (they're metadata, not branch history). Tags
+and releases live on the **monorepo**, `blas0/mac-os-apps`, and are
+project-prefixed so the three projects don't collide in one tag
+namespace:
 
 ```sh
-git tag -a v1.0.1 -m "Release 1.0.1"
-git push origin v1.0.1
+git tag -a oh-my-just-open-v1.0.1 -m "oh-my-just-open 1.0.1"
+git push origin oh-my-just-open-v1.0.1
 
-gh release create v1.0.1 \
+gh release create oh-my-just-open-v1.0.1 \
   dist/oh-my-just-open-1.0.1.dmg \
-  --title "v1.0.1" \
+  --title "oh-my-just-open v1.0.1" \
   --notes "See CHANGELOG.md for details."
 ```
 
 The Homebrew cask URL points at
-`github.com/blas0/oh-my-just-open/releases/download/v$VERSION/...`, and
-resolves as soon as the release exists.
+`github.com/blas0/mac-os-apps/releases/download/oh-my-just-open-v$VERSION/...`,
+and resolves as soon as the release exists. The archived
+`blas0/oh-my-just-open` repo still serves the original v1.0.0 asset, but
+nothing new is published there — v1.0.0 was re-uploaded here so the cask
+has a single home.
 
 ### 4. Update the Homebrew tap (PR)
 
@@ -134,25 +140,30 @@ repo directly. The one-time `gh repo create` / cask seed dance is
 
 ```sh
 VERSION=1.0.1
-DIST_DIR="$APP_REPO_ROOT/dist"
-SHA256=$(shasum -a 256 "$DIST_DIR/oh-my-just-open-${VERSION}.dmg" | awk '{print $1}')
+MONO_ROOT="$(git rev-parse --show-toplevel)"      # ~/Documents/Code/mac-os-apps
+SHA256=$(shasum -a 256 "$MONO_ROOT/oh-my-just-open/dist/oh-my-just-open-${VERSION}.dmg" | awk '{print $1}')
 
-cd "$TAP_REPO_ROOT"
+cd "$MONO_ROOT"
 git checkout main && git pull
 git checkout -b "cask/v${VERSION}"
 
+cd homebrew-omjo
 sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/oh-my-just-open.rb
 sed -i '' "s/sha256 \"[a-f0-9]*\"/sha256 \"${SHA256}\"/" Casks/oh-my-just-open.rb
 
-git add Casks/oh-my-just-open.rb
+cd "$MONO_ROOT"
+git add homebrew-omjo/Casks/oh-my-just-open.rb
 git commit -m "oh-my-just-open ${VERSION}"
 git push -u origin "cask/v${VERSION}"
 
 gh pr create --title "oh-my-just-open ${VERSION}" \
-  --body "DMG: https://github.com/blas0/oh-my-just-open/releases/tag/v${VERSION}
+  --body "DMG: https://github.com/blas0/mac-os-apps/releases/tag/oh-my-just-open-v${VERSION}
 sha256: \`${SHA256}\`"
 gh pr merge --squash --delete-branch
 git checkout main && git pull
+
+# Finally, mirror the merged cask out to the tap repo Homebrew resolves:
+./homebrew-omjo/publish-tap.sh
 ```
 
 **Do NOT run `brew audit --cask Casks/oh-my-just-open.rb`** — Homebrew
@@ -212,15 +223,20 @@ shipping path.
 - **Don't bump `CURRENT_PROJECT_VERSION` non-monotonically.** Keep it
   strictly increasing — easier on future-us if we ever wire an in-app
   updater back in.
-- **Tag format is `v<MARKETING_VERSION>`** (`v1.0.1`, not `1.0.1` or
-  `release-1.0.1`). The Homebrew cask's `livecheck` and the GitHub
-  Releases "latest" permalink both depend on that.
+- **Tag format is `oh-my-just-open-v<MARKETING_VERSION>`**
+  (`oh-my-just-open-v1.0.1`). The prefix is mandatory: `mac-os-apps`
+  hosts three projects off one tag namespace, and the cask's `livecheck`
+  regex matches on it. Plain `v1.0.1` tags are ambiguous here.
 - **Don't edit the tap cask file from this repo.** The skeleton under
-  `homebrew-tap/` is a template only. The live cask is in
-  `blas0/homebrew-omjo`; edit it there, commit there, push there.
-- **PR-only — no direct pushes to `main`.** Both repos. Even one-line
-  cask sha bumps and version bumps go through a branch + PR + squash
-  merge. The only thing you can push directly to a repo is a tag.
+  `homebrew-tap/` is a template only, kept for its background notes. The
+  live cask is the sibling directory `../homebrew-omjo/Casks/` — edit it
+  there, commit it to this monorepo, then run
+  `../homebrew-omjo/publish-tap.sh` to mirror it to `blas0/homebrew-omjo`.
+  Never commit directly to that tap repo.
+- **PR-only — no direct pushes to `main`.** Even one-line cask sha bumps
+  and version bumps go through a branch + PR + squash merge. The only
+  thing you can push directly is a tag. (`publish-tap.sh` pushing to the
+  tap mirror is exempt — that repo is a build output, not a source.)
 
 ---
 
@@ -249,6 +265,10 @@ shipping path.
 
 ## Pointers
 
-- GitHub repo: `https://github.com/blas0/oh-my-just-open`
-- Homebrew tap repo: `https://github.com/blas0/homebrew-omjo`
-- Releases (DMGs live here): `https://github.com/blas0/oh-my-just-open/releases`
+- GitHub repo: `https://github.com/blas0/mac-os-apps` (this project lives
+  under `oh-my-just-open/`)
+- Homebrew tap mirror: `https://github.com/blas0/homebrew-omjo` — publish
+  target only; source of truth is `../homebrew-omjo/` in this monorepo
+- Releases (DMGs live here): `https://github.com/blas0/mac-os-apps/releases`
+- Archived predecessor: `https://github.com/blas0/oh-my-just-open` —
+  read-only, retained so the original v1.0.0 asset URL keeps resolving

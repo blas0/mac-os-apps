@@ -3,7 +3,7 @@
 
 <img src="polaroids/avatar.png" width="25%">
 
-[`oh-my-just-open`](https://github.com/blas0/oh-my-just-open) — a minimal macOS default-app manager.
+[`oh-my-just-open`](https://github.com/blas0/mac-os-apps/tree/main/oh-my-just-open) — a minimal macOS default-app manager.
 
 </div>
 
@@ -69,4 +69,4 @@ Yes you can probably just prompt your agent to do so – but that's overrated.
 
 ## License
 
-The cask file is MIT-licensed. The app itself is also MIT — see [the upstream repo](https://github.com/blas0/oh-my-just-open/blob/main/LICENSE).
+The cask file is MIT-licensed. The app itself is also MIT — see [the upstream repo](https://github.com/blas0/mac-os-apps/blob/main/oh-my-just-open/LICENSE).
