@@ -118,10 +118,10 @@ gh release create oh-my-just-open-v1.0.1 \
 
 The Homebrew cask URL points at
 `github.com/blas0/mac-os-apps/releases/download/oh-my-just-open-v$VERSION/...`,
-and resolves as soon as the release exists. The archived
-`blas0/oh-my-just-open` repo still serves the original v1.0.0 asset, but
-nothing new is published there — v1.0.0 was re-uploaded here so the cask
-has a single home.
+and resolves as soon as the release exists. The standalone
+`blas0/oh-my-just-open` repo has been deleted; its v1.0.0 DMG was
+migrated here (byte-identical) under the tag `oh-my-just-open-v1.0.0`, so
+this monorepo is the only home the cask ever points at.
 
 ### 4. Update the Homebrew tap (PR)
 
@@ -270,5 +270,6 @@ shipping path.
 - Homebrew tap mirror: `https://github.com/blas0/homebrew-omjo` — publish
   target only; source of truth is `../homebrew-omjo/` in this monorepo
 - Releases (DMGs live here): `https://github.com/blas0/mac-os-apps/releases`
-- Archived predecessor: `https://github.com/blas0/oh-my-just-open` —
-  read-only, retained so the original v1.0.0 asset URL keeps resolving
+- Predecessor `blas0/oh-my-just-open` was deleted on 2026-07-28 after its
+  history and v1.0.0 release asset were migrated here. Old asset URLs
+  under that path no longer resolve — nothing should reference them.
